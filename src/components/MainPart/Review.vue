@@ -1,6 +1,6 @@
-<!--家教信息：教师评价 comment表-->
 <template>
   <div>
+    <!-- 搜索栏 -->
     <div class="search-container">
       <el-input
           v-model="searchQuery"
@@ -11,12 +11,26 @@
       <el-button @click="resetSearch" class="reset-button">重置</el-button>
     </div>
 
+    <!-- 表格 -->
     <el-table :data="pagedData" stripe style="width: 100%">
-      <el-table-column prop="commentId" label="评论号" sortable min-width="100"/>
-      <el-table-column prop="commentParent" label="家长" min-width="100"/>
-      <el-table-column prop="commentTeacher" label="老师" min-width="150"/>
-      <el-table-column prop="commentText" label="评论内容" min-width="150"/>
-      <el-table-column prop="commentTime" label="评论时间" sortable min-width="150"/>
+      <el-table-column prop="id" label="评论ID" sortable min-width="100"/>
+      <el-table-column prop="parentId" label="家长ID" sortable min-width="100"/>
+      <el-table-column prop="teacherId" label="教师ID" sortable min-width="100"/>
+      <el-table-column prop="rating" label="评分" sortable min-width="100"/>
+      <el-table-column prop="review" label="评价内容" min-width="150">
+        <template #default="scope">
+          <el-tooltip :content="scope.row.review" placement="top">
+            <el-input
+                type="textarea"
+                :rows="1"
+                :value="scope.row.review"
+                disabled
+                style="resize: none; height: 50px; overflow: hidden; text-overflow: ellipsis; white-space: normal; max-height: 50px;"
+            />
+          </el-tooltip>
+        </template>
+      </el-table-column>
+      <el-table-column prop="createdAt" label="评价时间" min-width="180"/>
       <el-table-column label="操作" min-width="150">
         <template #default="scope">
           <div class="action-buttons">
@@ -46,25 +60,30 @@
         v-model="dialogVisible2"
         width="30%"
         @close="resetForm"
-        @keydown="handleKeyDown"
     >
       <el-form :model="form" ref="form">
-        <el-form-item label="公告号">
-          <el-input v-model="form.commentId" disabled />
+        <el-form-item label="评论ID">
+          <el-input v-model="form.id" disabled />
         </el-form-item>
-        <el-form-item label="家长">
-          <el-input v-model="form.commentParent" disabled/>
+        <el-form-item label="家长ID">
+          <el-input v-model="form.parentId" disabled />
         </el-form-item>
-        <el-form-item label="教师">
-          <el-input v-model="form.commentTeacher" disabled/>
+        <el-form-item label="教师ID">
+          <el-input v-model="form.teacherId" disabled />
         </el-form-item>
-        <el-form-item label="公告内容">
-          <el-input type="textarea" v-model="form.commentText" @keydown.enter.native.stop/>
+        <el-form-item label="评分">
+          <el-input v-model="form.rating" />
+        </el-form-item>
+        <el-form-item label="评价内容">
+          <el-input v-model="form.review" />
+        </el-form-item>
+        <el-form-item label="评价时间">
+          <el-input v-model="form.createdAt" disabled />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible2 = false">取消</el-button>
-        <el-button type="primary" @click="updateComment">确定</el-button>
+        <el-button type="primary" @click="updateReview">确定</el-button>
       </div>
     </el-dialog>
 
@@ -75,19 +94,17 @@
         width="30%"
         @close="handleDialogClose">
       <br>
-      <span>你确定要删除该数据吗？</span>
+      <span>你确定要删除该评论吗？</span>
       <br><br><br>
       <span slot="footer" class="dialog-footer">
         <el-button @click="handleDialogClose">取消</el-button>
-        <el-button type="primary" @click="deleteRow">确认</el-button>
+        <el-button type="primary" @click="deleteReview">确认</el-button>
       </span>
     </el-dialog>
-
   </div>
 </template>
-
 <script>
-import axios from 'axios';
+import axios from "axios";
 
 export default {
   data() {
@@ -97,18 +114,19 @@ export default {
       currentPage: 1,
       pageSize: 10,
       totalItems: 0,
-      dialogVisible2:false,//编辑对话框
+      dialogVisible2: false, // 控制对话框显示
+      form: {
+        id: '',
+        parentId: '',
+        teacherId: '',
+        rating: '',
+        review: '',
+        createdAt: ''
+      },
       editingRow: null, // 当前编辑的行数据
-      dialogVisible1: false, //删除对话框
+      dialogVisible1: false, // 删除对话框
       deleteIndex: null, // 当前待删除的项的索引
       deleteRowData: null, // 当前待删除的项的数据
-      form: {
-        commentId: '',
-        commentParent: '',
-        commentTeacher: '',
-        commentText: '',
-        commentTime: '',
-      },
     };
   },
   computed: {
@@ -133,86 +151,68 @@ export default {
   methods: {
     async fetchData() {
       try {
-        const response = await axios.get('http://localhost:8081/comment/selectall'); // 更新为你的后端API URL
-        this.tableData = response.data.data;
+        const response = await axios.get('http://localhost:8889/review/selectAllReviews'); // 后端接口
+        if(response.data.code === 200){
+          this.tableData = response.data.data.map(review => ({
+            id: review.id,
+            parentId: review.parentId,
+            teacherId: review.teacherId,
+            rating: review.rating,
+            review: review.review,
+            createdAt: review.createdAt ? new Date(review.createdAt).toLocaleString() : '无',
+          }));
+        }else{
+          this.$message.error(response.data.msg);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     },
-    search() {
-      // 搜索逻辑已经在 computed 中处理，点击按钮可触发计算
-    },
+    search() {},
     resetSearch() {
       this.searchQuery = '';
     },
     editRow(row) {
-      this.dialogVisible2 = true; // 显示对话框
-      // console.log(this.dialogVisible)
-      this.form = { ...row }; // 复制行数据到表单
+      this.dialogVisible2 = true;
+      this.form = { ...row };
     },
-    handleKeyDown(event) {
-      if (event.key === 'Enter') {
-        this.updateComment();
-      }
-    },
-    async updateComment() {
+    async updateReview() {
       try {
-        this.form.noticeTime=null;//这里实现当修改内容时修改时间变为null,而在后端中时间为null，则赋值当前时间
-        const response = await axios.put(`http://localhost:8081/comment/${this.form.commentId}`, this.form); // 更新为你的后端API URL
-        if (response.data.success === true) {
-          this.$message.success('修改成功'); // 显示修改成功提示
-        } else {
-          this.$message.error('修改失败'); // 显示修改失败提示
+        const response = await axios.put(`http://localhost:8889/review/${this.form.id}`, this.form);
+        if (response.status === 200) {
+          this.fetchData();
+          this.dialogVisible2 = false;
         }
-        this.dialogVisible2 = false; // 隐藏对话框
-        this.fetchData(); // 刷新表格数据
       } catch (error) {
-        console.error('Error updating notice:', error);
-        this.$message.error('修改失败'); // 显示修改失败提示
+        console.error('Error updating review:', error);
       }
-    },
-    resetForm() {
-      this.form = {
-        commentId: '',
-        commentParent: '',
-        commentTeacher: '',
-        commentText: '',
-        commentTime: '',
-      };
     },
     confirmDelete(index, row) {
+      this.dialogVisible1 = true;
       this.deleteIndex = index;
       this.deleteRowData = row;
-      this.dialogVisible1 = true;
-    },
-    async deleteRow() {
-      try {
-        const response = await axios.delete(`http://localhost:8081/teachers/${this.deleteRowData.teacherId}`); // 后端删除请求
-        if (response.data.success === true) {
-          this.tableData.splice(this.deleteIndex, 1); // 从 tableData 中删除项
-          this.$message.success('删除成功');
-        } else {
-          this.$message.error('删除失败1');
-        }
-      } catch (error) {
-        console.error('Error deleting data:', error);
-        this.$message.error('删除失败2');
-      }
-      this.handleDialogClose();
     },
     handleDialogClose() {
       this.dialogVisible1 = false;
-      this.deleteIndex = null;
-      this.deleteRowData = null;
+    },
+    async deleteReview() {
+      try {
+        const response = await axios.delete(`http://localhost:8889/review/${this.deleteRowData.id}`);
+        if (response.status === 200) {
+          this.tableData.splice(this.deleteIndex, 1);
+          this.dialogVisible1 = false;
+        }
+      } catch (error) {
+        console.error('Error deleting review:', error);
+      }
     },
     handleSizeChange(size) {
       this.pageSize = size;
-      this.currentPage = 1; // 重置当前页码为 1
     },
     handleCurrentChange(page) {
       this.currentPage = page;
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -246,3 +246,4 @@ export default {
   text-align: right;
 }
 </style>
+

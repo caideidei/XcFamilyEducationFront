@@ -168,7 +168,11 @@ export default {
     async fetchData() {
       try {
         const response = await axios.get('http://localhost:8889/parent/selectAllParents'); // 更新为你的后端API URL
-        this.tableData = response.data.data;
+        if(response.data.code===200){
+          this.tableData = response.data.data;
+        }else{
+          this.$message.error(response.data.msg);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }

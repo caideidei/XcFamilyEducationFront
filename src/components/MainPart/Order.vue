@@ -191,19 +191,24 @@ export default {
     async fetchData() {
       try {
         const response = await axios.get('http://localhost:8889/order/selectAllOrders'); // 获取订单数据
-        this.tableData = response.data.data.map(order => ({
-          id: order.id, // 订单ID
-          teacherId: order.teacherId, // 教师ID
-          parentId: order.parentId, // 家长ID
-          status: order.status || '未定义', // 订单状态
-          time: order.time || '未定义', // 时间
-          note: order.note || '无', // 备注
-          price: order.price || 0, // 价格
-          address: order.address || '无', // 地址
-          grade: order.grade || '无', // 年级
-          subject: order.subject || '无', // 科目
-          createdAt: order.createdAt ? new Date(order.createdAt).toLocaleString() : '无', // 创建时间格式化
-        }));
+        if(response.data.code === 200){
+          this.tableData = response.data.data.map(order => ({
+            id: order.id, // 订单ID
+            teacherId: order.teacherId, // 教师ID
+            parentId: order.parentId, // 家长ID
+            status: order.status || '未定义', // 订单状态
+            time: order.time || '未定义', // 时间
+            note: order.note || '无', // 备注
+            price: order.price || 0, // 价格
+            address: order.address || '无', // 地址
+            grade: order.grade || '无', // 年级
+            subject: order.subject || '无', // 科目
+            createdAt: order.createdAt ? new Date(order.createdAt).toLocaleString() : '无', // 创建时间格式化
+          }));
+        }else{
+          this.$message.error(response.data.msg);
+        }
+
       } catch (error) {
         console.error('Error fetching orders:', error);
       }

@@ -181,21 +181,25 @@ export default {
     async fetchData() {
       try {
         const response = await axios.get('http://localhost:8889/teacher/selectAllTeachers'); // 更新为你的后端API URL
-        this.tableData = response.data.data.map(teacher => ({
-          teacherId: teacher.id, // 教师ID
-          userId: teacher.userId, // 用户ID
-          teacherName: teacher.username, // 用户名
-          realName: teacher.realName, // 真实姓名
-          teacherPhone: teacher.phoneNumber, // 电话
-          teacherEmail: teacher.email || '无', // 邮箱
-          status: teacher.status || '未定义', // 状态
-          createdAt: teacher.createdAt ? new Date(teacher.createdAt).toLocaleString() : '无', // 创建时间
-          teacherPicture: teacher.picture || 'default-avatar.png', // 头像
-          teacherQualification: teacher.qualification || '无', // 资质
-          teacherIntro: teacher.intro || '无', // 简介
-          officialTeacher: teacher.officialTeacher ? '是' : '否', // 是否正式教师
-          subjects: teacher.subjects || '无', // 擅长科目
-        }));
+        if(response.data.code === 200){
+          this.tableData = response.data.data.map(teacher => ({
+            teacherId: teacher.id, // 教师ID
+            userId: teacher.userId, // 用户ID
+            teacherName: teacher.username, // 用户名
+            realName: teacher.realName, // 真实姓名
+            teacherPhone: teacher.phoneNumber, // 电话
+            teacherEmail: teacher.email || '无', // 邮箱
+            status: teacher.status || '未定义', // 状态
+            createdAt: teacher.createdAt ? new Date(teacher.createdAt).toLocaleString() : '无', // 创建时间
+            teacherPicture: teacher.picture || 'default-avatar.png', // 头像
+            teacherQualification: teacher.qualification || '无', // 资质
+            teacherIntro: teacher.intro || '无', // 简介
+            officialTeacher: teacher.officialTeacher ? '是' : '否', // 是否正式教师
+            subjects: teacher.subjects || '无', // 擅长科目
+          }));
+        }else{
+          this.$message.error(response.data.msg);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }

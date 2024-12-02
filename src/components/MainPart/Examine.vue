@@ -174,21 +174,29 @@ export default {
     async fetchData() {
       try {
         const response = await axios.get('http://localhost:8889/examine/selectAllExamines'); // 更新为你的后端API URL
-        this.tableData = response.data.data.map(examine => ({
-          id: examine.id, // 审核ID
-          teacherId: examine.teacherId, // 教师ID
-          realName: examine.realName, // 姓名
-          sex: examine.sex, // 性别
-          qualification: examine.qualification, // 资质
-          intro: examine.intro || '无', // 简介
-          subjects: examine.subjects || '无', // 擅长科目
-          adminId: examine.adminId || '无', // 审核管理员ID
-          status: examine.status || '未定义', // 状态
-          reason: examine.reason || '无', // 审核理由
-          createdAt: examine.createdAt ? new Date(examine.createdAt).toLocaleString() : '无', // 创建时间
-        }));
+
+        if (response.data.code === 200) {
+          // 如果返回成功
+          this.tableData = response.data.data.map(examine => ({
+            id: examine.id, // 审核ID
+            teacherId: examine.teacherId, // 教师ID
+            realName: examine.realName, // 姓名
+            sex: examine.sex, // 性别
+            qualification: examine.qualification, // 资质
+            intro: examine.intro || '无', // 简介
+            subjects: examine.subjects || '无', // 擅长科目
+            adminId: examine.adminId || '无', // 审核管理员ID
+            status: examine.status || '未定义', // 状态
+            reason: examine.reason || '无', // 审核理由
+            createdAt: examine.createdAt ? new Date(examine.createdAt).toLocaleString() : '无', // 创建时间
+          }));
+        } else {
+          // 如果返回错误（比如权限不足）
+          this.$message.error(response.data.msg);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
+        this.$message.error('发生错误，请稍后再试');
       }
     },
     search() {},

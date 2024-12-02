@@ -161,15 +161,20 @@ export default {
     async fetchData() {
       try {
         const response = await axios.get('http://localhost:8889/admin/selectAllAdmins', {
-          withCredentials: true,
+          withCredentials: true, // 保持跨域请求的凭据
         });
         if (response.data.code === 200) {
-          this.tableData = response.data.data;  // 使用返回的数据
+          // 请求成功，更新表格数据
+          this.tableData = response.data.data;
         } else {
-          console.error('数据加载失败', response.data.msg);
+          // 如果返回的code不是200，表示失败，显示错误信息
+          // console.error('数据加载失败:', response.data.msg);
+          this.$message.error(response.data.msg);
         }
       } catch (error) {
+        // 请求出错（例如网络问题），显示通用错误信息
         console.error('Error fetching data:', error);
+        this.$message.error('发生错误，请稍后再试');
       }
     },
     // 格式化日期

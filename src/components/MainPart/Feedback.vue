@@ -9,15 +9,34 @@
       />
       <el-button @click="search" type="primary" class="search-button">搜索</el-button>
       <el-button @click="resetSearch" class="reset-button">重置</el-button>
-      <el-button @click="openAddDialog" type="success" class="add-button" >新增</el-button>
     </div>
+
     <!-- 表格 -->
     <el-table :data="pagedData" stripe style="width: 100%">
-      <el-table-column prop="feedbackId" label="反馈号" sortable min-width="100"/>
-      <el-table-column prop="feedbackPerson" label="反馈人"  min-width="100"/>
-      <el-table-column prop="feedbackRole" label="角色" sortable min-width="100"/>
-      <el-table-column prop="feedbackText" label="反馈内容" min-width="150"/>
-      <el-table-column prop="feedbackTime" label="反馈时间" sortable min-width="150"/>
+      <el-table-column prop="id" label="反馈ID" sortable min-width="100"/>
+      <el-table-column prop="senderId" label="用户ID" sortable min-width="100"/>
+      <el-table-column prop="message" label="反馈内容" min-width="200">
+        <template #default="scope">
+          <el-tooltip :content="scope.row.message" placement="top">
+            <el-input
+                type="textarea"
+                :rows="1"
+                :value="scope.row.message"
+                disabled
+                style="resize: none; height: 50px; overflow: hidden; text-overflow: ellipsis; white-space: normal; max-height: 50px;"
+            />
+          </el-tooltip>
+        </template>
+      </el-table-column>
+      <el-table-column prop="createdAt" label="反馈时间" min-width="180"/>
+      <el-table-column prop="username" label="用户名" min-width="100"/>
+      <el-table-column prop="role" label="角色" min-width="100"/>
+      <el-table-column label="头像" min-width="100">
+        <template #default="scope">
+          <img v-if="scope.row.picture" :src="scope.row.picture" alt="头像" style="width: 50px; height: 50px; border-radius: 50%;"/>
+          <span v-else>暂无头像</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" min-width="150">
         <template #default="scope">
           <div class="action-buttons">
@@ -27,12 +46,13 @@
         </template>
       </el-table-column>
     </el-table>
+
     <!-- 分页选择器 -->
     <div class="pagination-container">
       <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :page-sizes="[1,3,5,10]"
+          :page-sizes="[1, 3, 5, 10]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="totalItems"
           @size-change="handleSizeChange"
@@ -40,54 +60,34 @@
       />
     </div>
 
-<!--    增加数据对话框-->
-    <el-dialog
-        title="新增反馈"
-        v-model="addDialogVisible"
-        width="30%"
-        @close="resetAddForm"
-        @keydown="handleAddKeyDown"
-    >
-      <el-form :model="addForm" ref="addForm">
-        <el-form-item label="反馈号">
-          <el-input v-model="addForm.feedbackId" />
-        </el-form-item>
-        <el-form-item label="反馈人">
-          <el-input v-model="addForm.feedbackPerson" />
-        </el-form-item>
-        <el-form-item label="角色">
-          <el-input v-model="addForm.feedbackRole" />
-        </el-form-item>
-        <el-form-item label="反馈内容">
-          <el-input type="textarea" v-model="addForm.feedbackText" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="addDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="addFeedback">确定</el-button>
-      </div>
-    </el-dialog>
-
     <!-- 编辑对话框 -->
     <el-dialog
-        title="编辑反馈"
+        title="编辑反馈信息"
         v-model="dialogVisible2"
         width="30%"
         @close="resetForm"
-        @keydown="handleUpdateKeyDown"
     >
       <el-form :model="form" ref="form">
-        <el-form-item label="反馈号">
-          <el-input v-model="form.feedbackId" disabled />
+        <el-form-item label="反馈ID">
+          <el-input v-model="form.id" disabled />
         </el-form-item>
-        <el-form-item label="反馈人">
-          <el-input v-model="form.feedbackPerson" disabled/>
-        </el-form-item>
-        <el-form-item label="角色">
-          <el-input v-model="form.feedbackRole" disabled/>
+        <el-form-item label="用户ID">
+          <el-input v-model="form.senderId" disabled />
         </el-form-item>
         <el-form-item label="反馈内容">
-          <el-input type="textarea" v-model="form.feedbackText" @keydown.enter.native.stop/>
+          <el-input v-model="form.message" />
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input v-model="form.username" />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-input v-model="form.role" />
+        </el-form-item>
+        <el-form-item label="头像">
+          <el-input v-model="form.picture" />
+        </el-form-item>
+        <el-form-item label="反馈时间">
+          <el-input v-model="form.createdAt" disabled />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -101,14 +101,13 @@
         title="确认删除"
         v-model="dialogVisible1"
         width="30%"
-        @close="handleDialogClose"
-        @keydown="handleDeleteKeyDown">
+        @close="handleDialogClose">
       <br>
-      <span>你确定要删除该数据吗？</span>
+      <span>你确定要删除该反馈信息吗？</span>
       <br><br><br>
       <span slot="footer" class="dialog-footer">
         <el-button @click="handleDialogClose">取消</el-button>
-        <el-button type="primary" @click="deleteRow">确认</el-button>
+        <el-button type="primary" @click="deleteFeedback">确认</el-button>
       </span>
     </el-dialog>
   </div>
@@ -126,25 +125,19 @@ export default {
       pageSize: 10,
       totalItems: 0,
       dialogVisible2: false, // 控制编辑对话框显示
+      form: {
+        id: '',
+        senderId: '',
+        message: '',
+        createdAt: '',
+        username: '',
+        role: '',
+        picture: ''
+      },
       editingRow: null, // 当前编辑的行数据
-      dialogVisible1: false, // 控制删除确认对话框显示
+      dialogVisible1: false, // 删除对话框
       deleteIndex: null, // 当前待删除的项的索引
       deleteRowData: null, // 当前待删除的项的数据
-      addDialogVisible: false, // 控制新增对话框显示
-      form: {
-        feedbackId: '',
-        feedbackPerson: '',
-        feedbackRole: '',
-        feedbackText: '',
-        feedbackTime: '',
-      },
-      addForm: {
-        feedbackId: '',
-        feedbackPerson: '',
-        feedbackRole: '',
-        feedbackText: '',
-        feedbackTime: null, // 可以在后端自动生成时间
-      },
     };
   },
   computed: {
@@ -169,128 +162,69 @@ export default {
   methods: {
     async fetchData() {
       try {
-        const response = await axios.get('http://localhost:8081/feedback/selectall'); // 更新为你的后端API URL
-        this.tableData = response.data.data;
+        const response = await axios.get('http://localhost:8889/feedback/selectAllFeedbacks'); // 更新为你的后端API URL
+        if(response.data.code===200){
+          this.tableData = response.data.data.map(feedback => ({
+            id: feedback.id, // 反馈ID
+            senderId: feedback.senderId, // 用户ID
+            message: feedback.message, // 反馈内容
+            createdAt: feedback.createdAt ? new Date(feedback.createdAt).toLocaleString() : '无', // 反馈时间
+            username: feedback.username || '未知', // 用户名
+            role: feedback.role || '未知', // 角色
+            picture: feedback.picture || '', // 头像URL
+          }));
+        }else{
+          this.$message.error(response.data.msg);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     },
-    search() {
-      // 搜索逻辑已经在 computed 中处理，点击按钮可触发计算
-    },
+    search() {},
     resetSearch() {
       this.searchQuery = '';
     },
-
     editRow(row) {
-      this.dialogVisible2 = true; // 显示编辑对话框
-      this.form = { ...row }; // 复制行数据到表单
+      this.dialogVisible2 = true;
+      this.form = { ...row };
     },
     async updateFeedback() {
       try {
-        this.form.feedbackTime = null; // 将反馈时间设置为 null
-        const response = await axios.put(`http://localhost:8081/feedback/${this.form.feedbackId}`, this.form); // 更新为你的后端API URL
-        if (response.data.success === true) {
-          this.$message.success('修改成功');
-        } else {
-          this.$message.error('修改失败');
+        const response = await axios.put(`http://localhost:8081/feedback/${this.form.id}`, this.form);
+        if (response.status === 200) {
+          this.fetchData();
+          this.dialogVisible2 = false;
         }
-        this.dialogVisible2 = false; // 隐藏对话框
-        this.fetchData(); // 刷新表格数据
       } catch (error) {
         console.error('Error updating feedback:', error);
-        this.$message.error('修改失败');
       }
     },
-    resetForm() {
-      this.form = {
-        feedbackId: '',
-        feedbackPerson: '',
-        feedbackRole: '',
-        feedbackText: '',
-        feedbackTime: '',
-      };
-    },
-    handleUpdateKeyDown(event) {
-      if (event.key === 'Enter') {
-        this.updateFeedback();
-      }
-    },
-    // 打开新增数据对话框
-    openAddDialog() {
-      this.addDialogVisible = true;
-    },
-    //具体方法
-    async addFeedback() {
-      try {
-        const response = await axios.post('http://localhost:8081/feedback/insert', this.addForm);
-        if (response.data.success === true) {
-          this.$message.success('新增成功');
-          this.fetchData(); // 刷新表格数据
-          this.addDialogVisible = false; // 隐藏对话框
-        } else {
-          this.$message.error('新增失败');
-        }
-      } catch (error) {
-        console.error('Error adding feedback:', error);
-        this.$message.error('新增失败');
-      }
-    },
-    //重置数据
-    resetAddForm() {
-      this.addForm = {
-        feedbackId: '',
-        feedbackPerson: '',
-        feedbackRole: '',
-        feedbackText: '',
-        feedbackTime: null,
-      };
-    },
-    handleAddKeyDown(event) {
-      if (event.key === 'Enter') {
-        this.addFeedback();
-      }
-    },
-
     confirmDelete(index, row) {
+      this.dialogVisible1 = true;
       this.deleteIndex = index;
       this.deleteRowData = row;
-      this.dialogVisible1 = true;
-    },
-    async deleteRow() {
-      try {
-        const response = await axios.delete(`http://localhost:8081/feedback/${this.deleteRowData.feedbackId}`); // 更新为你的后端API URL
-        if (response.data.success === true) {
-          this.tableData.splice(this.deleteIndex, 1);
-          this.$message.success('删除成功');
-        } else {
-          this.$message.error('删除失败');
-        }
-      } catch (error) {
-        console.error('Error deleting data:', error);
-        this.$message.error('删除失败');
-      }
-      this.handleDialogClose();
     },
     handleDialogClose() {
       this.dialogVisible1 = false;
-      this.deleteIndex = null;
-      this.deleteRowData = null;
     },
-    handleDeleteKeyDown(event) {
-      if (event.key === 'Enter') {
-        this.deleteRow();
+    async deleteFeedback() {
+      try {
+        const response = await axios.delete(`http://localhost:8081/feedback/${this.deleteRowData.id}`);
+        if (response.status === 200) {
+          this.tableData.splice(this.deleteIndex, 1);
+          this.dialogVisible1 = false;
+        }
+      } catch (error) {
+        console.error('Error deleting feedback:', error);
       }
     },
-
     handleSizeChange(size) {
       this.pageSize = size;
-      this.currentPage = 1; // 重置当前页码为 1
     },
     handleCurrentChange(page) {
       this.currentPage = page;
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -313,20 +247,13 @@ export default {
 
 .action-buttons {
   display: flex;
-  gap: 10px; /* Add some space between buttons */
-}
-
-.action-button {
-  border: 1px solid #dcdfe6; /* Light border color */
-  border-radius: 4px; /* Rounded corners */
-  padding: 4px 8px; /* Padding around the text */
+  gap: 10px;
 }
 
 .pagination-container {
   margin-top: 20px;
 }
 
-/*对话框样式*/
 .dialog-footer {
   text-align: right;
 }
