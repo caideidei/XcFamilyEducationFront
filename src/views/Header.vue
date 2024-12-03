@@ -33,21 +33,16 @@
   </div>
 </template>
 
+
 <script>
 export default {
   props: {
-    userPicture: {
-      type: String,
-      default: () => require('@/images/3.jpg'),
-    },
-    userName: {
-      type: String,
-      default: '用户',
-    },
+    userName: String,
+    userPicture: String,
   },
   data() {
     return {
-      dialogVisible: false,
+      dialogVisible: false, // 初始化 dialogVisible 状态
     };
   },
   methods: {
@@ -55,12 +50,13 @@ export default {
       if (command === 'profile') {
         alert('个人中心');
       } else if (command === 'logout') {
-        this.dialogVisible = true; // 显示对话框
+        this.dialogVisible = true; // 显示退出登录对话框
       }
     },
     logout() {
-      // 清除 token
       localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userPicture');
       this.$router.push('/login'); // 跳转到登录页
     },
   },

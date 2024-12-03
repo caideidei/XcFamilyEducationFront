@@ -58,6 +58,8 @@ export default {
           // 获取 token 并保存到 localStorage
           const token = response.data.data.token;
           localStorage.setItem('token', token);  // 保存 token
+          // 登录成功后获取用户信息
+          await this.fetchUserInfo(token);
           // 显示成功消息
           this.$message.success("登录成功");
 
@@ -74,6 +76,38 @@ export default {
         console.error(error);
       }
     },
+
+    async fetchUserInfo(token) {
+      try {
+        const response = await axios.get('http://localhost:8889/user/user-info', {
+          headers: {
+            token: token,  // 从 localStorage 中获取 token 并传递给后端
+          },
+        });
+
+        if (response.data.code === 200) {
+          const userInfo = response.data.data;
+          this.userName = userInfo.username;  // 更新用户名
+          if (response.data.code === 200) {
+            const userInfo = response.data.data;
+            this.userName = userInfo.username;  // 更新用户名
+            this.userPicture = userInfo.picture ? userInfo.picture : 'src/images/3.jpg';
+            // 保存用户信息到 localStorage
+            localStorage.setItem('userName', this.userName);
+            localStorage.setItem('userPicture', this.userPicture);
+          }
+
+          // 保存用户信息到 localStorage
+          localStorage.setItem('userName', this.userName);
+          localStorage.setItem('userPicture', this.userPicture);
+        } else {
+          console.error("获取用户信息失败", response.data.msg);
+        }
+      } catch (error) {
+        console.error("请求用户信息失败", error);
+      }
+    },
+
     goToRegister() {
       this.$router.push('/register');  // 跳转到注册页面
     }

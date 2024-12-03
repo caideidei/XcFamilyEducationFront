@@ -1,9 +1,9 @@
 <template>
   <el-container style="height: 100%;">
     <el-header>
-      <Header :userPicture="userPicture" :userName="userName" />
+      <Header :userPicture="userPicture" :userName="userName" @logout="logout" />
     </el-header>
-    <div class="divider"></div> <!-- 分割线 -->
+    <div class="divider"></div>
     <el-container style="width: 100%">
       <el-aside width="200px">
         <Sidebar @select="updateContent" />
@@ -36,13 +36,35 @@ export default {
   methods: {
     updateContent(index) {
       this.selectedSection = index;
+    },
+
+    // 退出登录的方法
+    logout() {
+      // 清除本地存储中的用户信息
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userPicture');
+
+      // 跳转到登录页
+      this.$router.push('/login');
     }
   },
   mounted() {
+    // 从 localStorage 获取用户信息
     const userPicture = localStorage.getItem('userPicture');
     const userName = localStorage.getItem('userName');
-    this.userPicture = userPicture || ''; // 如果获取不到则设为空字符串
-    this.userName = userName || '';
+
+    // 如果有数据，则更新组件的 data
+    if (userPicture && userName) {
+      this.userPicture = userPicture;
+      this.userName = userName;
+    } else {
+      // 如果没有数据，可以尝试重新获取（例如用户未登录时）
+      const token = localStorage.getItem('token');
+      if (token) {
+        this.fetchUserInfo(token); // 调用 API 获取用户信息
+      }
+    }
   }
 };
 </script>
@@ -54,5 +76,4 @@ export default {
   background-color: slateblue;
   border-radius: 5px;
 }
-
 </style>
