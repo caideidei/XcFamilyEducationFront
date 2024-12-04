@@ -299,18 +299,26 @@ export default {
     // 删除管理员
     async deleteRow() {
       try {
-        const response = await axios.delete(`http://localhost:8889/admin/${this.deleteRowData.id}`);
+        const response = await axios.delete(
+            'http://localhost:8889/admin/deleteAdmin',
+            {
+              params: {
+                userId: this.deleteRowData.userId  // 使用管理员的电话号码作为标识符传递
+              }
+            }
+        );
         if (response.data.code === 200) {
-          this.tableData.splice(this.deleteIndex, 1);  // 从 tableData 中删除项
+          this.tableData.splice(this.deleteIndex, 1); // 从 tableData 中删除项
           this.$message.success('删除成功');
         } else {
-          this.$message.error('删除失败');
+          this.$message.error(response.data.msg || '删除失败');
         }
       } catch (error) {
         console.error('Error deleting admin:', error);
-        this.$message.error('删除失败');
+        this.$message.error('删除失败，请稍后重试');
+      } finally {
+        this.handleDialogClose();
       }
-      this.handleDialogClose();
     },
     // 关闭删除对话框
     handleDialogClose() {
