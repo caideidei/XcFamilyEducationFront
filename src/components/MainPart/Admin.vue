@@ -86,12 +86,6 @@
         @close="resetForm"
     >
       <el-form :model="form" ref="form">
-        <el-form-item label="管理员ID">
-          <el-input v-model="form.adminId" disabled />
-        </el-form-item>
-        <el-form-item label="用户ID">
-          <el-input v-model="form.id" disabled />
-        </el-form-item>
         <el-form-item label="用户名">
           <el-input v-model="form.username" />
         </el-form-item>
@@ -127,8 +121,6 @@
             <el-button size="small" type="primary" style="width: 60px; height: 30px; padding: 0; line-height: 40px;">上传头像</el-button>
           </el-upload>
         </el-form-item>
-
-
 
       </el-form>
       <div slot="footer" class="dialog-footer">
