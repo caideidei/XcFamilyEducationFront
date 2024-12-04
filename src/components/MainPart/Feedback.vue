@@ -9,12 +9,21 @@
       />
       <el-button @click="search" type="primary" class="search-button">搜索</el-button>
       <el-button @click="resetSearch" class="reset-button">重置</el-button>
+      <el-button type="success" @click="openAddDialog" class="add-button">新增</el-button>
     </div>
 
     <!-- 表格 -->
     <el-table :data="pagedData" stripe style="width: 100%">
       <el-table-column prop="id" label="反馈ID" sortable min-width="100"/>
       <el-table-column prop="senderId" label="用户ID" sortable min-width="100"/>
+      <el-table-column prop="username" label="用户名" min-width="100"/>
+      <el-table-column prop="role" label="角色" min-width="100"/>
+      <el-table-column label="头像" min-width="100">
+        <template #default="scope">
+          <img v-if="scope.row.picture" :src="scope.row.picture" alt="头像" style="width: 50px; height: 50px; border-radius: 50%;"/>
+          <span v-else>暂无头像</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="message" label="反馈内容" min-width="200">
         <template #default="scope">
           <el-tooltip :content="scope.row.message" placement="top">
@@ -29,14 +38,6 @@
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="反馈时间" min-width="180"/>
-      <el-table-column prop="username" label="用户名" min-width="100"/>
-      <el-table-column prop="role" label="角色" min-width="100"/>
-      <el-table-column label="头像" min-width="100">
-        <template #default="scope">
-          <img v-if="scope.row.picture" :src="scope.row.picture" alt="头像" style="width: 50px; height: 50px; border-radius: 50%;"/>
-          <span v-else>暂无头像</span>
-        </template>
-      </el-table-column>
       <el-table-column label="操作" min-width="150">
         <template #default="scope">
           <div class="action-buttons">
@@ -60,6 +61,25 @@
       />
     </div>
 
+    <!-- 新增反馈对话框 -->
+    <el-dialog
+        title="新增反馈"
+        v-model="dialogVisible"
+        width="30%"
+        @close="resetForm"
+    >
+      <el-form :model="addForm" ref="form">
+        <el-form-item label="反馈内容">
+          <el-input v-model="addForm.message" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="addFeedback">确定</el-button>
+      </div>
+    </el-dialog>
+
+
     <!-- 编辑对话框 -->
     <el-dialog
         title="编辑反馈信息"
@@ -68,23 +88,22 @@
         @close="resetForm"
     >
       <el-form :model="form" ref="form">
-        <el-form-item label="反馈ID">
-          <el-input v-model="form.id" disabled />
-        </el-form-item>
-        <el-form-item label="用户ID">
-          <el-input v-model="form.senderId" disabled />
-        </el-form-item>
+
         <el-form-item label="反馈内容">
-          <el-input v-model="form.message" />
+          <el-input
+              type="textarea"
+              v-model="form.message"
+              :autosize="{ minRows: 3, maxRows: 6 }"
+              placeholder="请输入反馈内容"
+              style="resize: none; overflow: hidden;"
+          />
         </el-form-item>
+
         <el-form-item label="用户名">
-          <el-input v-model="form.username" />
+          <el-input v-model="form.username" disabled/>
         </el-form-item>
         <el-form-item label="角色">
-          <el-input v-model="form.role" />
-        </el-form-item>
-        <el-form-item label="头像">
-          <el-input v-model="form.picture" />
+          <el-input v-model="form.role" disabled />
         </el-form-item>
         <el-form-item label="反馈时间">
           <el-input v-model="form.createdAt" disabled />
@@ -138,6 +157,10 @@ export default {
       dialogVisible1: false, // 删除对话框
       deleteIndex: null, // 当前待删除的项的索引
       deleteRowData: null, // 当前待删除的项的数据
+      dialogVisible: false, // 控制新增反馈对话框显示
+      addForm: { // 新增反馈的表单
+        message: ''
+      },
     };
   },
   computed: {
@@ -189,14 +212,20 @@ export default {
       this.form = { ...row };
     },
     async updateFeedback() {
+      this.form.createdAt = null;
       try {
-        const response = await axios.put(`http://localhost:8081/feedback/${this.form.id}`, this.form);
-        if (response.status === 200) {
-          this.fetchData();
+        const response = await axios.put(`http://localhost:8889/feedback/updateFeedback`, this.form);
+        if (response.data.code === 200) {
+          this.$message.success("反馈信息更新成功！");
           this.dialogVisible2 = false;
+          // 重新加载数据，更新表格
+          await this.fetchData();
+        }else{
+          this.$message.error(response.data.msg ||"修改失败");
         }
       } catch (error) {
         console.error('Error updating feedback:', error);
+        this.$message.error("更新失败！");
       }
     },
     confirmDelete(index, row) {
@@ -223,8 +252,33 @@ export default {
     },
     handleCurrentChange(page) {
       this.currentPage = page;
-    }
-  }
+    },
+    openAddDialog() {
+      this.dialogVisible = true;
+      this.addForm = { message: '' }; // 清空新增反馈表单
+    },
+    async addFeedback() {
+      try {
+        const response = await axios.post('http://localhost:8889/feedback/insertFeedback', {
+          message: this.addForm.message,
+        });
+        if (response.data.code === 200) {
+          this.fetchData(); // 新增成功后重新获取数据
+          this.dialogVisible = false; // 关闭对话框
+          this.$message.success('新增反馈成功');
+        } else {
+          this.$message.error(response.data.msg);
+        }
+      } catch (error) {
+        console.error('Error adding feedback:', error);
+        this.$message.error('新增反馈失败');
+      }
+    },
+    resetForm() {
+      this.addForm = { message: '' }; // 重置新增反馈表单
+    },
+  },
+
 };
 </script>
 

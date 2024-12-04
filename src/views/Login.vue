@@ -83,14 +83,15 @@ export default {
         if (response.data.code === 200) {
           const userInfo = response.data.data;
           this.userName = userInfo.username;  // 更新用户名
-          if (response.data.code === 200) {
-            const userInfo = response.data.data;
-            this.userName = userInfo.username;  // 更新用户名
-            this.userPicture = userInfo.picture ? userInfo.picture : 'src/images/3.jpg';
-            // 保存用户信息到 localStorage
-            localStorage.setItem('userName', this.userName);
-            localStorage.setItem('userPicture', this.userPicture);
-          }
+          this.userPicture = userInfo.picture ? userInfo.picture : 'src/images/3.jpg';
+          // if (response.data.code === 200) {
+          //   const userInfo = response.data.data;
+          //   this.userName = userInfo.username;  // 更新用户名
+          //
+          //   // 保存用户信息到 localStorage
+          //   localStorage.setItem('userName', this.userName);
+          //   localStorage.setItem('userPicture', this.userPicture);
+          // }
 
           // 保存用户信息到 localStorage
           localStorage.setItem('userName', this.userName);
