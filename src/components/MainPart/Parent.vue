@@ -14,9 +14,9 @@
     <!-- 表格 -->
     <el-table :data="pagedData" stripe style="width: 100%">
       <!-- 家长ID -->
-      <el-table-column prop="id" label="家长ID" sortable min-width="100"/>
+      <el-table-column prop="parentId" label="家长ID" sortable min-width="100"/>
       <!-- 用户ID -->
-      <el-table-column prop="userId" label="用户ID" sortable min-width="100"/>
+      <el-table-column prop="id" label="用户ID" sortable min-width="100"/>
       <!-- 用户名 -->
       <el-table-column prop="username" label="用户名" sortable min-width="100"/>
       <!-- 姓名 -->
@@ -25,9 +25,7 @@
       <el-table-column prop="phoneNumber" label="电话" min-width="150"/>
       <!-- 邮箱 -->
       <el-table-column prop="email" label="邮箱" min-width="150"/>
-      <!-- 角色 -->
-<!--      <el-table-column prop="role" label="角色" min-width="100"/>-->
-      <!-- 状态 -->
+
       <el-table-column prop="status" label="状态" min-width="100"/>
       <!-- 创建时间 -->
       <el-table-column prop="createdAt" label="创建时间" sortable min-width="200">
@@ -73,26 +71,43 @@
         @close="resetForm"
     >
       <el-form :model="form" ref="form">
-        <el-form-item label="家长ID">
+        <!-- 用户ID -->
+        <el-form-item label="用户ID">
           <el-input v-model="form.id" disabled />
         </el-form-item>
+        <!-- 用户名 -->
         <el-form-item label="用户名">
           <el-input v-model="form.username" />
         </el-form-item>
-        <el-form-item label="姓名">
+        <!-- 真实姓名 -->
+        <el-form-item label="真实姓名">
           <el-input v-model="form.realName" />
         </el-form-item>
-        <el-form-item label="角色">
-          <el-input v-model="form.role" />
+        <!-- 密码 -->
+        <el-form-item label="密码">
+          <el-input v-model="form.password" />
         </el-form-item>
+        <!-- 电话 -->
         <el-form-item label="电话">
           <el-input v-model="form.phoneNumber" />
         </el-form-item>
+        <!-- 邮箱 -->
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
         </el-form-item>
+        <!-- 头像 -->
         <el-form-item label="头像">
-          <el-input v-model="form.picture" />
+          <img v-if="form.picture" :src="form.picture" class="avatar" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;" />
+          <el-upload
+              class="avatar-uploader"
+              action="http://localhost:8889/common/oss/upload"
+              :show-file-list="false"
+              :on-success="handleAvatarSuccess"
+              :before-upload="beforeAvatarUpload"
+              :headers="uploadHeaders"
+          >
+            <el-button size="small" type="primary" style="width: 60px; height: 30px; padding: 0; line-height: 40px;">上传头像</el-button>
+          </el-upload>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -100,6 +115,7 @@
         <el-button type="primary" @click="updateParent">确定</el-button>
       </div>
     </el-dialog>
+
 
     <!-- 删除确认对话框 -->
     <el-dialog
@@ -112,7 +128,7 @@
       <br><br><br>
       <span slot="footer" class="dialog-footer">
         <el-button @click="handleDialogClose">取消</el-button>
-        <el-button type="primary" @click="deleteRow">确认</el-button>
+        <el-button type="primary" @click="deleteParent">确认</el-button>
       </span>
     </el-dialog>
   </div>
@@ -137,7 +153,12 @@ export default {
         role: '',
         phoneNumber: '',
         email: '',
-        picture: ''
+        picture: '',
+        parentId:'',
+        password:''
+      },
+      uploadHeaders: {
+        token: localStorage.getItem('token') // 获取 token
       },
       editingRow: null, // 当前编辑的行数据
       dialogVisible1: false, // 删除对话框
@@ -167,16 +188,28 @@ export default {
   methods: {
     async fetchData() {
       try {
-        const response = await axios.get('http://localhost:8889/parent/selectAllParents'); // 更新为你的后端API URL
-        if(response.data.code===200){
-          this.tableData = response.data.data;
-        }else{
+        const response = await axios.get('http://localhost:8889/parent/selectAllParents');
+        if (response.data.code === 200) {
+          // 处理数据映射
+          this.tableData = response.data.data.map(item => ({
+            parentId: item.id, // 家长ID（parentId）
+            id: item.userId, // 用户ID
+            username: item.username,
+            realName: item.realName,
+            phoneNumber: item.phoneNumber,
+            email: item.email,
+            picture: item.picture,
+            createdAt: item.createdAt,
+            status: item.status
+          }));
+        } else {
           this.$message.error(response.data.msg);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     },
+
     search() {},
     resetSearch() {
       this.searchQuery = '';
@@ -187,28 +220,30 @@ export default {
     },
     async updateParent() {
       try {
-        const response = await axios.put(`http://localhost:8081/parent/${this.form.id}`, this.form); // 更新为你的后端API URL
-        if(response.data.success) {
-          this.$message.success("修改成功！");
-        } else {
-          this.$message.error("修改失败");
+        const response = await axios.put(`http://localhost:8889/parent/updateParent`, this.form);
+        if (response.data.code === 200) {
+          this.$message.success("家长信息更新成功！");
+          this.dialogVisible2 = false;
+          // 重新加载数据，更新表格
+          await this.fetchData();
+        }else{
+          this.$message.error(response.data.msg ||"修改失败");
         }
-        this.dialogVisible2 = false;
-        this.fetchData();
       } catch (error) {
-        console.error('Error updating parent:', error);
-        this.$message.error("修改失败");
+        console.error('Error updating teacher:', error);
+        this.$message.error("更新失败！");
       }
     },
     resetForm() {
       this.form = {
-        id: '',
+        userId: '',
         username: '',
         realName: '',
         role: '',
         phoneNumber: '',
         email: '',
-        picture: ''
+        picture: '',
+        password: ''
       };
     },
     confirmDelete(index, row) {
@@ -216,20 +251,25 @@ export default {
       this.deleteRowData = row;
       this.dialogVisible1 = true;
     },
-    async deleteRow() {
+    async deleteParent() {
       try {
-        const response = await axios.delete(`http://localhost:8081/parent/${this.deleteRowData.id}`); // 后端删除请求
-        if (response.data.success) {
-          this.tableData.splice(this.deleteIndex, 1); // 从 tableData 中删除项
-          this.$message.success('删除成功');
+        // 发送删除请求，传入 userId 参数
+        const response = await axios.delete(`http://localhost:8889/parent/deleteParent`, {
+          params: { userId: this.deleteRowData.id }  // 传递用户ID作为请求参数
+        });
+
+        if (response.data.code === 200) {
+          this.$message.success(response.data.msg);  // 显示删除成功消息
+          // 从表格中移除已删除的行
+          this.tableData.splice(this.deleteIndex, 1);
+          this.dialogVisible1 = false;  // 关闭确认删除对话框
         } else {
-          this.$message.error('删除失败');
+          this.$message.error(response.data.msg || '删除失败');
         }
       } catch (error) {
-        console.error('Error deleting data:', error);
-        this.$message.error('删除失败');
+        console.error('Error deleting teacher:', error);
+        this.$message.error("删除失败！");
       }
-      this.handleDialogClose();
     },
     handleDialogClose() {
       this.dialogVisible1 = false;
@@ -246,7 +286,24 @@ export default {
     formatDate(date) {
       if (!date) return '';
       return new Date(date).toLocaleString();
-    }
+    },
+    handleAvatarSuccess(response, file) {
+      if (response.code === 200) {
+        // 获取上传后的图片路径并赋值到 form.picture
+        this.form.picture = response.data;  // 假设后端返回的路径是 response.data
+        this.$message.success('头像上传成功');
+      } else {
+        this.$message.error('头像上传失败');
+      }
+    },
+    // 上传前的处理
+    beforeAvatarUpload(file) {
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        this.$message.error('只能上传图片文件');
+      }
+      return isImage;
+    },
   },
 };
 </script>
