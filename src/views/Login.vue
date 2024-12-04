@@ -66,7 +66,6 @@ export default {
           // 跳转到首页
           this.$router.push({
             name: 'Home',
-            // params: { userName, userPicture }
           });
         } else {
           this.errorMessage = response.data.msg || '登录失败，请检查账号和密码';
@@ -79,11 +78,7 @@ export default {
 
     async fetchUserInfo(token) {
       try {
-        const response = await axios.get('http://localhost:8889/user/user-info', {
-          headers: {
-            token: token,  // 从 localStorage 中获取 token 并传递给后端
-          },
-        });
+        const response = await axios.get('http://localhost:8889/user/user-info');
 
         if (response.data.code === 200) {
           const userInfo = response.data.data;
@@ -186,5 +181,12 @@ button:hover {
   text-align: right;
   margin-top: 15px;
   font-size: 14px;
+}
+.register-link span {
+  color: #007bff;
+  cursor: pointer;
+}
+.register-link span:hover {
+  text-decoration: underline;
 }
 </style>

@@ -50,7 +50,7 @@
               <input
                   type="radio"
                   name="role"
-                  value="教师"
+                  value="teacher"
                   v-model="role"
                   required
               />
@@ -60,7 +60,7 @@
               <input
                   type="radio"
                   name="role"
-                  value="家长"
+                  value="parent"
                   v-model="role"
                   required
               />
@@ -70,9 +70,6 @@
         </div>
 
         <button type="submit">注册</button>
-<!--        <br>-->
-<!--        <br>-->
-<!--        <button type="button" @click="goToLogin">返回登录</button> &lt;!&ndash; 添加注册按钮 &ndash;&gt;-->
       </form>
       <p class="login-link">
         注册完毕，<span @click="goToLogin">去登录</span>
@@ -104,39 +101,47 @@ export default {
         return;
       }
 
+      // 确保用户名、手机号、密码和角色都不为空
+      if (!this.name || !this.phone || !this.password || !this.role) {
+        this.errorMessage = '请填写完整的注册信息';
+        return;
+      }
+
       try {
-        const response = await axios.post('http://localhost:8081/api/auth/register', {
-          name: this.name,
-          phone: this.phone,
+        // 向后端发送注册请求
+        const response = await axios.post('http://localhost:8889/user/register', {
+          username: this.name,
+          phoneNumber: this.phone,
           password: this.password,
           role: this.role,
         });
 
-        if (response.data.success) {
+        // 处理返回的数据
+        if (response.data.code === 200) {
           this.$message.success("注册成功");
           // 注册成功后跳转到登录页面
           this.$router.push({ name: 'Login' });
         } else {
-          this.errorMessage = response.data.message;
+          // 如果返回的msg不为注册成功，显示错误信息
+          this.errorMessage = response.data.msg || '注册失败，请检查输入信息';
         }
       } catch (error) {
-        console.log(error.response);
-        console.log(error.response.status);
-        console.log(error.response.data);
-        if(error.response.status === 400){
-          if(error.response.data.message === "该手机号已被注册"){
+        // 根据错误代码处理不同的错误信息
+        if (error.response.status === 500) {
+          if (error.response.data.msg === "该手机号已被注册") {
             this.errorMessage = "该手机号已被注册";
-          }else{
-            this.errorMessage = error.response.data.message || '注册失败，请检查输入信息';
+          } else {
+            this.errorMessage = error.response.data.msg || '注册失败，请检查输入信息';
           }
-        }else{
+        } else {
           this.$message.error("注册失败");
           this.errorMessage = '注册失败，请检查输入信息';
         }
       }
     },
-    goToLogin() {  // 添加 goToRegister 方法
-      this.$router.push({ name: 'Login' });  // 跳转到注册页面
+    goToLogin() {
+      // 跳转到登录页面
+      this.$router.push({ name: 'Login' });
     },
   },
 };

@@ -35,6 +35,7 @@
 
 
 <script>
+import axios from 'axios';
 export default {
   props: {
     userName: String,
@@ -53,11 +54,28 @@ export default {
         this.dialogVisible = true; // 显示退出登录对话框
       }
     },
-    logout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('userPicture');
-      this.$router.push('/login'); // 跳转到登录页
+    async logout() {
+      // 获取当前用户的 token
+      const token = localStorage.getItem('token');
+      // 调用后端的退出接口
+      try {
+        const response = await axios.post('http://localhost:8889/user/logout');
+
+        if (response.data.code === 200) {
+          // 退出成功，清除本地存储的用户数据
+          localStorage.removeItem('token');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('userPicture');
+          this.$router.push('/login'); // 跳转到登录页面
+          this.$message.success(response.data.msg); // 提示成功退出
+        } else {
+          this.$message.error(response.data.msg || '退出失败');
+        }
+      } catch (error) {
+        this.$message.error('退出失败，请稍后重试');
+        console.error(error);
+      }
+      this.dialogVisible = false; // 关闭对话框
     },
   },
 };

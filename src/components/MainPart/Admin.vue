@@ -9,6 +9,7 @@
       />
       <el-button @click="search" type="primary" class="search-button">搜索</el-button>
       <el-button @click="resetSearch" class="reset-button">重置</el-button>
+      <el-button type="success" @click="openAddDialog" class="add-button">新增</el-button>
     </div>
 
     <!-- 表格 -->
@@ -56,6 +57,27 @@
       />
     </div>
 
+    <!-- 新增管理员对话框 -->
+    <el-dialog
+        title="新增管理员"
+        v-model="addDialogVisible"
+        width="20%"
+        :style="{ height: '240px' , padding: '30px'}"
+    >
+      <el-form :model="addForm" ref="addForm">
+        <el-form-item label="用户名">
+          <el-input v-model="addForm.username" />
+        </el-form-item>
+        <el-form-item label="电话号码">
+          <el-input v-model="addForm.phoneNumber" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="addDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="addAdmin">确认</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 编辑对话框 -->
     <el-dialog
         title="编辑管理员信息"
@@ -65,7 +87,10 @@
     >
       <el-form :model="form" ref="form">
         <el-form-item label="管理员ID">
-          <el-input v-model="form.managerId" disabled />
+          <el-input v-model="form.adminId" disabled />
+        </el-form-item>
+        <el-form-item label="用户ID">
+          <el-input v-model="form.id" disabled />
         </el-form-item>
         <el-form-item label="用户名">
           <el-input v-model="form.username" />
@@ -76,21 +101,42 @@
         <el-form-item label="电话">
           <el-input v-model="form.phoneNumber" />
         </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="form.password" />
+        </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
         </el-form-item>
         <el-form-item label="角色">
           <el-input v-model="form.role" />
         </el-form-item>
-        <el-form-item label="头像">
-          <el-input v-model="form.picture" />
+        <el-form-item label="状态">
+          <el-input v-model="form.status" />
         </el-form-item>
+
+        <el-form-item label="头像">
+          <img v-if="form.picture" :src="form.picture" class="avatar" style="width: 40px; height: 40px; object-fit: cover; margin-right: 10px;"/>
+          <el-upload
+              class="avatar-uploader"
+              action="http://localhost:8889/common/oss/upload"
+              :show-file-list="false"
+              :on-success="handleAvatarSuccess"
+              :before-upload="beforeAvatarUpload"
+              :headers="uploadHeaders"
+          >
+            <el-button size="small" type="primary" style="width: 60px; height: 30px; padding: 0; line-height: 40px;">上传头像</el-button>
+          </el-upload>
+        </el-form-item>
+
+
+
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible2 = false">取消</el-button>
         <el-button type="primary" @click="updateManager">确定</el-button>
       </div>
     </el-dialog>
+
 
     <!-- 删除确认对话框 -->
     <el-dialog
@@ -121,18 +167,27 @@ export default {
       totalItems: 0,
       dialogVisible2: false,  // 控制编辑对话框显示
       form: {
-        managerId: '',
+        id: '',
         username: '',
         realName: '',
         phoneNumber: '',
         email: '',
         role: '',
-        picture: ''
+        picture: '',
+        password:''
       },
       editingRow: null,  // 当前编辑的行数据
       dialogVisible1: false,  // 删除对话框
       deleteIndex: null,  // 当前待删除的项的索引
       deleteRowData: null,  // 当前待删除的项的数据
+      addDialogVisible: false,  // 控制新增管理员对话框显示
+      addForm: {
+        username: '',
+        phoneNumber: ''
+      },
+      uploadHeaders: {
+        token: localStorage.getItem('token') // 获取 token
+      },
     };
   },
   computed: {
@@ -185,34 +240,54 @@ export default {
     // 编辑行
     editRow(row) {
       this.dialogVisible2 = true;
-      this.form = { ...row };  // 将行数据赋给表单
+      // 确保 adminId 和 id 映射正确
+      this.form = {
+        adminId: row.id,   // adminId 对应管理员ID
+        id: row.userId,     // id 对应用户ID
+        username: row.username,
+        realName: row.realName,
+        phoneNumber: row.phoneNumber,
+        email: row.email,
+        role: row.role,
+        status: row.status,
+        picture: row.picture,
+        password :''
+      };
     },
+
     // 更新管理员信息
     async updateManager() {
+      if (this.form.password === '') {
+        delete this.form.password;
+      }
       try {
-        const response = await axios.put(`http://localhost:8889/admin/${this.form.managerId}`, this.form);
+        const response = await axios.put('http://localhost:8889/admin/updateAdmin', this.form);
         if (response.data.code === 200) {
           this.$message.success("修改成功！");
           this.dialogVisible2 = false;
-          this.fetchData();
+          this.fetchData();  // 刷新数据
         } else {
-          this.$message.error("修改失败");
+          this.$message.error(response.data.msg ||"修改失败");
         }
       } catch (error) {
         console.error('Error updating admin:', error);
         this.$message.error("修改失败");
       }
     },
+
     // 重置表单
     resetForm() {
       this.form = {
-        managerId: '',
+        adminId: '',
+        id: '',
         username: '',
         realName: '',
         phoneNumber: '',
         email: '',
         role: '',
-        picture: ''
+        status: '',
+        picture: '',
+        password: ''
       };
     },
     // 确认删除
@@ -251,6 +326,44 @@ export default {
     // 分页当前页变化
     handleCurrentChange(page) {
       this.currentPage = page;
+    },
+    // 打开新增管理员对话框
+    openAddDialog() {
+      this.addDialogVisible = true;
+      this.addForm = { username: '', phoneNumber: '' };  // 清空表单
+    },
+    handleAvatarSuccess(response, file) {
+      if (response.code === 200) {
+        // 获取上传后的图片路径并赋值到 form.picture
+        this.form.picture = response.data;  // 假设后端返回的路径是 response.data
+        this.$message.success('头像上传成功');
+      } else {
+        this.$message.error('头像上传失败');
+      }
+    },
+    // 上传前的处理
+    beforeAvatarUpload(file) {
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        this.$message.error('只能上传图片文件');
+      }
+      return isImage;
+    },
+    // 新增管理员
+    async addAdmin() {
+      try {
+        const response = await axios.post('http://localhost:8889/admin/insertAdmin', this.addForm);
+        if (response.data.code === 200) {
+          this.$message.success('新增管理员成功');
+          this.addDialogVisible = false;
+          await this.fetchData();  // 刷新数据
+        } else {
+          this.$message.error(response.data.msg || '新增管理员失败');
+        }
+      } catch (error) {
+        console.error('Error adding admin:', error);
+        this.$message.error('新增管理员失败，请稍后重试');
+      }
     },
   },
   name: 'AdminTable',
@@ -291,4 +404,5 @@ export default {
 .dialog-footer {
   text-align: right;
 }
+
 </style>
