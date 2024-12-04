@@ -42,14 +42,22 @@
           </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column label="操作" min-width="150">
+      <el-table-column label="操作" min-width="200">
         <template #default="scope">
           <div class="action-buttons">
-            <el-button size="small" @click="editRow(scope.row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
+            <el-row type="flex" justify="end" align="middle">
+              <el-button size="small" @click="editRow(scope.row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
+              <!-- 新增修改状态的按钮，放在右侧 -->
+              <el-button size="small" :type="scope.row.status === 'active' ? 'danger' : 'success'"
+                         @click="toggleStatus(scope.row)">
+                {{ scope.row.status === 'active' ? '禁用' : '启用' }}
+              </el-button>
+            </el-row>
           </div>
         </template>
       </el-table-column>
+
     </el-table>
 
     <!-- 分页选择器 -->
@@ -107,7 +115,6 @@
         <el-button type="primary" @click="updateTeacher">确定</el-button>
       </div>
     </el-dialog>
-
     <!-- 删除确认对话框 -->
     <el-dialog
         title="确认删除"
@@ -269,13 +276,40 @@ export default {
     },
     async deleteTeacher() {
       try {
-        const response = await axios.delete(`http://localhost:8081/teacher/${this.deleteRowData.teacherId}`);
-        if (response.status === 200) {
+        // 发送删除请求，传入 userId 参数
+        const response = await axios.delete(`http://localhost:8889/teacher/deleteTeacher`, {
+          params: { userId: this.deleteRowData.id }  // 传递用户ID作为请求参数
+        });
+
+        if (response.data.code === 200) {
+          this.$message.success(response.data.msg);  // 显示删除成功消息
+          // 从表格中移除已删除的行
           this.tableData.splice(this.deleteIndex, 1);
-          this.dialogVisible1 = false;
+          this.dialogVisible1 = false;  // 关闭确认删除对话框
+        } else {
+          this.$message.error(response.data.msg || '删除失败');
         }
       } catch (error) {
         console.error('Error deleting teacher:', error);
+        this.$message.error("删除失败！");
+      }
+    },
+    async toggleStatus(row) {
+      try {
+        const response = await axios.put('http://localhost:8889/teacher/updateTeacherStatus', null, {
+          params: { userId: row.id }  // 传递用户ID作为请求参数
+        });
+
+        if (response.data.code === 200) {
+          // 状态切换成功，更新前端显示
+          row.status = row.status === 'active' ? 'banned' : 'active';
+          this.$message.success('状态更新成功');
+        } else {
+          this.$message.error('状态更新失败');
+        }
+      } catch (error) {
+        console.error('修改状态时出错', error);
+        this.$message.error('状态更新失败');
       }
     },
     handleSizeChange(size) {
