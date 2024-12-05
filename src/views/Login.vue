@@ -63,10 +63,8 @@ export default {
           // 显示成功消息
           this.$message.success("登录成功");
 
-          // 跳转到首页
-          this.$router.push({
-            name: 'Home',
-          });
+          // 跳转到用户角色对应的界面
+          await this.redirectBasedOnRole();
         } else {
           this.errorMessage = response.data.msg || '登录失败，请检查账号和密码';
         }
@@ -75,7 +73,31 @@ export default {
         console.error(error);
       }
     },
+    async redirectBasedOnRole() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:8889/user/user-info', {
+          headers: { 'token': token } // 传递 token 作为请求头
+        });
 
+        if (response.data.code === 200) {
+          const userInfo = response.data.data;
+          const role = userInfo.role; // 获取用户角色
+
+          if (role === 'teacher') {
+            this.$router.push({ name: 'Teacher' }); // 跳转到教师界面
+          } else if (role === 'parent') {
+            this.$router.push({ name: 'Parent' }); // 跳转到家长界面
+          } else if (role === 'admin') {
+            this.$router.push({ name: 'Home' }); // 跳转到管理员界面
+          }
+        } else {
+          console.error("获取用户信息失败", response.data.msg);
+        }
+      } catch (error) {
+        console.error("请求用户信息失败", error);
+      }
+    },
     async fetchUserInfo(token) {
       try {
         const response = await axios.get('http://localhost:8889/user/user-info');
@@ -84,15 +106,6 @@ export default {
           const userInfo = response.data.data;
           this.userName = userInfo.username;  // 更新用户名
           this.userPicture = userInfo.picture ? userInfo.picture : 'src/images/3.jpg';
-          // if (response.data.code === 200) {
-          //   const userInfo = response.data.data;
-          //   this.userName = userInfo.username;  // 更新用户名
-          //
-          //   // 保存用户信息到 localStorage
-          //   localStorage.setItem('userName', this.userName);
-          //   localStorage.setItem('userPicture', this.userPicture);
-          // }
-
           // 保存用户信息到 localStorage
           localStorage.setItem('userName', this.userName);
           localStorage.setItem('userPicture', this.userPicture);

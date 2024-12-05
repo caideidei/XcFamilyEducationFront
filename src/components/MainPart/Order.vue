@@ -18,6 +18,7 @@
       <el-table-column prop="subject" label="学科" min-width="120"/>
       <el-table-column prop="grade" label="年级" min-width="120"/>
       <el-table-column prop="price" label="价格" min-width="120"/>
+      <el-table-column prop="classNumber" label="课时数" min-width="120"/>
       <el-table-column prop="address" label="地址" min-width="150"/>
       <el-table-column prop="time" label="时间" min-width="180">
         <template #default="scope">
@@ -160,6 +161,7 @@ export default {
         grade: '',
         time: '',
         price: '',
+        classNumber:'',
         address: '',
         note: '',
         teacherId: '',
@@ -200,6 +202,7 @@ export default {
             time: order.time || '未定义', // 时间
             note: order.note || '无', // 备注
             price: order.price || 0, // 价格
+            classNumber:order.classNumber,
             address: order.address || '无', // 地址
             grade: order.grade || '无', // 年级
             subject: order.subject || '无', // 科目

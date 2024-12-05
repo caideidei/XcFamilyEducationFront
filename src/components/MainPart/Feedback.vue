@@ -238,13 +238,20 @@ export default {
     },
     async deleteFeedback() {
       try {
-        const response = await axios.delete(`http://localhost:8081/feedback/${this.deleteRowData.id}`);
-        if (response.status === 200) {
+        const response = await axios.delete(`http://localhost:8889/feedback/deleteFeedback`, {
+          params: { id: this.deleteRowData.id }  // 传递用户ID作为请求参数
+        });
+        if (response.data.code === 200) {
+          this.$message.success(response.data.msg);  // 显示删除成功消息
+          // 从表格中移除已删除的行
           this.tableData.splice(this.deleteIndex, 1);
-          this.dialogVisible1 = false;
+          this.dialogVisible1 = false;  // 关闭确认删除对话框
+        } else {
+          this.$message.error(response.data.msg || '删除失败');
         }
       } catch (error) {
         console.error('Error deleting feedback:', error);
+        this.$message.error("删除失败！");
       }
     },
     handleSizeChange(size) {

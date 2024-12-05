@@ -46,14 +46,14 @@
       <el-table-column prop="createdAt" label="创建时间" min-width="180"/>
       <el-table-column prop="fileUrl" label="作业文件URL" min-width="180"/>
       <el-table-column prop="review" label="教师反馈" min-width="200"/>
-      <el-table-column label="操作" min-width="150">
-        <template #default="scope">
-          <div class="action-buttons">
-            <el-button size="small" @click="editRow(scope.row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
-          </div>
-        </template>
-      </el-table-column>
+<!--      <el-table-column label="操作" min-width="150">-->
+<!--        <template #default="scope">-->
+<!--          <div class="action-buttons">-->
+<!--            <el-button size="small" @click="editRow(scope.row)">编辑</el-button>-->
+<!--            <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>-->
+<!--          </div>-->
+<!--        </template>-->
+<!--      </el-table-column>-->
     </el-table>
 
     <!-- 分页选择器 -->

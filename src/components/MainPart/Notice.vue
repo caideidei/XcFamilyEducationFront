@@ -9,6 +9,7 @@
       />
       <el-button @click="search" type="primary" class="search-button">搜索</el-button>
       <el-button @click="resetSearch" class="reset-button">重置</el-button>
+      <el-button type="success" @click="openAddDialog" class="add-button">新增</el-button>
     </div>
 
     <!-- 公告表格 -->
@@ -54,6 +55,26 @@
       />
     </div>
 
+    <el-dialog
+        title="新增公告"
+        v-model="dialogVisible"
+        width="30%"
+        @close="resetForm"
+    >
+      <el-form :model="addForm" ref="form">
+        <el-form-item label="公告标题">
+          <el-input v-model="addForm.title" />
+        </el-form-item>
+        <el-form-item label="公告内容">
+          <el-input v-model="addForm.content" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="addNotice">确定</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 编辑公告对话框 -->
     <el-dialog
         title="编辑公告"
@@ -65,20 +86,14 @@
         <el-form-item label="公告ID">
           <el-input v-model="form.id" disabled />
         </el-form-item>
+        <el-form-item label="发布人ID">
+          <el-input v-model="form.createdBy" disabled />
+        </el-form-item>
         <el-form-item label="公告标题">
           <el-input v-model="form.title" />
         </el-form-item>
         <el-form-item label="公告内容">
           <el-input v-model="form.content" />
-        </el-form-item>
-        <el-form-item label="发布人ID">
-          <el-input v-model="form.createdBy" disabled />
-        </el-form-item>
-        <el-form-item label="发布时间">
-          <el-input v-model="form.createdAt" disabled />
-        </el-form-item>
-        <el-form-item label="过期时间">
-          <el-input v-model="form.expirationDate" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -128,6 +143,11 @@ export default {
       dialogVisible1: false, // 删除对话框
       deleteIndex: null, // 当前待删除的项的索引
       deleteRowData: null, // 当前待删除的项的数据
+      dialogVisible: false, // 控制新增反馈对话框显示
+      addForm: { // 新增反馈的表单
+        title:'',
+        content:''
+      },
     };
   },
   computed: {
@@ -178,14 +198,22 @@ export default {
       this.form = { ...row };
     },
     async updateNotice() {
+      this.form.createdAt = null;
+      this.form.expirationDate = null;
       try {
-        const response = await axios.put(`http://localhost:8081/notice/${this.form.id}`, this.form);
-        if (response.status === 200) {
-          this.fetchData();
+        const response = await axios.put(`http://localhost:8889/notice/updateNotice`, this.form);
+
+        if (response.data.code === 200) {
+          this.$message.success("更新公告信息成功！");
           this.dialogVisible2 = false;
+          // 重新加载数据，更新表格
+          await this.fetchData();
+        }else{
+          this.$message.error(response.data.msg ||"修改失败");
         }
       } catch (error) {
         console.error('Error updating notice:', error);
+        this.$message.error("更新失败！");
       }
     },
     confirmDelete(index, row) {
@@ -198,13 +226,20 @@ export default {
     },
     async deleteNotice() {
       try {
-        const response = await axios.delete(`http://localhost:8081/notice/${this.deleteRowData.id}`);
-        if (response.status === 200) {
+        const response = await axios.delete(`http://localhost:8889/notice/deleteNotice`, {
+          params: { id: this.deleteRowData.id }  // 传递用户ID作为请求参数
+        });
+        if (response.data.code === 200) {
+          this.$message.success(response.data.msg);  // 显示删除成功消息
+          // 从表格中移除已删除的行
           this.tableData.splice(this.deleteIndex, 1);
-          this.dialogVisible1 = false;
+          this.dialogVisible1 = false;  // 关闭确认删除对话框
+        } else {
+          this.$message.error(response.data.msg || '删除失败');
         }
       } catch (error) {
         console.error('Error deleting notice:', error);
+        this.$message.error("删除失败！");
       }
     },
     handleSizeChange(size) {
@@ -212,7 +247,29 @@ export default {
     },
     handleCurrentChange(page) {
       this.currentPage = page;
-    }
+    },
+    openAddDialog() {
+      this.dialogVisible = true;
+      this.addForm = { title: '',content: '' }; // 清空新增反馈表单
+    },
+    async addNotice() {
+      try {
+        const response = await axios.post('http://localhost:8889/notice/insertNotice', this.addForm);
+        if (response.data.code === 200) {
+          this.fetchData(); // 新增成功后重新获取数据
+          this.dialogVisible = false; // 关闭对话框
+          this.$message.success('新增反馈成功');
+        } else {
+          this.$message.error(response.data.msg);
+        }
+      } catch (error) {
+        console.error('Error adding feedback:', error);
+        this.$message.error('新增反馈失败');
+      }
+    },
+    resetForm() {
+      this.addForm = { title: '',content: '' }; // 重置新增反馈表单
+    },
   }
 };
 </script>
