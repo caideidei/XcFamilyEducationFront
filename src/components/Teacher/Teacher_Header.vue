@@ -83,7 +83,10 @@ export default {
       }
     },
     logout() {
-      localStorage.removeItem('token'); // 清除token
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userPicture');
+      localStorage.removeItem('role');
       this.dialogVisible = false;
       this.$router.push('/login'); // 跳转到 Login.vue
     },

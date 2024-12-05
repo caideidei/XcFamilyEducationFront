@@ -1,7 +1,7 @@
 <template>
   <div class="header">
-    <img src="@/images/1.jpg" alt="Logo" class="logo" />
-    <div class="title">小菜家教平台</div>
+    <img src="@/images/4.png" alt="Logo" class="logo" />
+    <div class="title">智学家教平台</div>
     <el-dropdown @command="handleCommand">
       <span class="el-dropdown-link">
         <img :src="userPicture" class="user-picture" alt="用户头像" />
@@ -66,6 +66,7 @@ export default {
           localStorage.removeItem('token');
           localStorage.removeItem('userName');
           localStorage.removeItem('userPicture');
+          localStorage.removeItem('role');
           this.$router.push('/login'); // 跳转到登录页面
           this.$message.success(response.data.msg); // 提示成功退出
         } else {
