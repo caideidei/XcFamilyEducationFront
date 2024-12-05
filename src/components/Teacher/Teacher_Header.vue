@@ -1,8 +1,8 @@
 <template>
   <div class="header">
     <div class="header-left">
-      <img src="@/images/1.jpg" alt="Logo" class="logo" />
-      <div class="title">小菜家教平台</div>
+      <img src="@/images/4.png" alt="Logo" class="logo" />
+      <div class="title">智学家教平台</div>
     </div>
     <div class="header-center">
       <el-menu
