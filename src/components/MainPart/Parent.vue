@@ -40,11 +40,15 @@
         </template>
       </el-table-column>
       <!-- 操作 -->
-      <el-table-column label="操作" min-width="150">
+      <el-table-column label="操作" min-width="200">
         <template #default="scope">
           <div class="action-buttons">
             <el-button size="small" @click="editRow(scope.row)">编辑</el-button>
             <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
+            <el-button size="small" :type="scope.row.status === 'active' ? 'danger' : 'success'"
+                       @click="toggleStatus(scope.row)">
+              {{ scope.row.status === 'active' ? '禁用' : '启用' }}
+            </el-button>
           </div>
         </template>
       </el-table-column>
@@ -271,6 +275,24 @@ export default {
         this.$message.error("删除失败！");
       }
     },
+    async toggleStatus(row) {
+      try {
+        const response = await axios.put('http://localhost:8889/parent/updateParentStatus', null, {
+          params: { userId: row.id }  // 传递用户ID作为请求参数
+        });
+
+        if (response.data.code === 200) {
+          // 状态切换成功，更新前端显示
+          row.status = row.status === 'active' ? 'banned' : 'active';
+          this.$message.success('状态更新成功');
+        } else {
+          this.$message.error('状态更新失败');
+        }
+      } catch (error) {
+        console.error('修改状态时出错', error);
+        this.$message.error('状态更新失败');
+      }
+    },
     handleDialogClose() {
       this.dialogVisible1 = false;
       this.deleteIndex = null;
@@ -309,6 +331,7 @@ export default {
 </script>
 
 <style scoped>
+
 .search-container {
   display: flex;
   align-items: center;

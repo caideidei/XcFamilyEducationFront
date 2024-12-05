@@ -47,15 +47,31 @@
         </template>
       </el-table-column>
       <el-table-column prop="teacherId" label="教师ID" min-width="100"/>
-      <el-table-column prop="status" label="状态" min-width="120"/>
-      <el-table-column prop="createdAt" label="发布时间" min-width="150"/>
+      <el-table-column prop="status" label="状态" sortable min-width="120">
+        <template v-slot="scope">
+          <span v-if="scope.row.status === 'pendingReview'">待审核</span>
+          <span v-else-if="scope.row.status === 'reviewFailed'">审核未通过</span>
+          <span v-else-if="scope.row.status === 'reviewPassed'">审核通过</span>
+          <span v-else-if="scope.row.status === 'inTrail'">试课中</span>
+          <span v-else>成功接单</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="createdAt" label="发布时间" sortable min-width="150"/>
 
       <!-- 操作列 -->
       <el-table-column label="操作" min-width="150">
         <template #default="scope">
           <div class="action-buttons">
-            <el-button size="small" @click="editRow(scope.row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
+            <el-button
+                size="small"
+                :type="scope.row.status === 'pendingReview' ? 'primary' : 'default'"
+                @click="editRow(scope.row)"
+                style="width:45px;"
+                :disabled="scope.row.status !== 'pendingReview'"
+            >
+              {{ scope.row.status === 'pendingReview' ? '待审核' : '已审核' }}
+            </el-button>            <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
           </div>
         </template>
       </el-table-column>
@@ -89,32 +105,36 @@
           <el-input v-model="form.parentId" disabled />
         </el-form-item>
         <el-form-item label="学科">
-          <el-input v-model="form.subject" />
+          <el-input v-model="form.subject" disabled/>
         </el-form-item>
         <el-form-item label="年级">
-          <el-input v-model="form.grade" />
+          <el-input v-model="form.grade" disabled/>
         </el-form-item>
         <el-form-item label="时间">
-          <el-input v-model="form.time" />
+          <el-input v-model="form.time" disabled/>
         </el-form-item>
         <el-form-item label="价格">
-          <el-input v-model="form.price" />
+          <el-input v-model="form.price" disabled/>
         </el-form-item>
         <el-form-item label="地址">
-          <el-input v-model="form.address" />
+          <el-input v-model="form.address" disabled/>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input type="textarea" v-model="form.note" />
+          <el-input type="textarea" v-model="form.note" disabled/>
         </el-form-item>
-        <el-form-item label="教师ID">
-          <el-input v-model="form.teacherId" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-input v-model="form.status" />
-        </el-form-item>
+<!--        <el-form-item label="教师ID">-->
+<!--          <el-input v-model="form.teacherId" />-->
+<!--        </el-form-item>-->
         <el-form-item label="发布时间">
           <el-input v-model="form.createdAt" disabled />
         </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="form.status" placeholder="请选择状态">
+            <el-option label="待审核" value="pendingReview"></el-option>
+            <el-option label="通过" value="reviewPassed"></el-option>
+            <el-option label="未通过" value="reviewFailed"></el-option>
+          </el-select>
+          </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible2 = false">取消</el-button>
@@ -227,18 +247,22 @@ export default {
       this.form = { ...row }; // 将当前行数据传入表单
     },
     async updateOrder() {
+      this.form.createdAt = null;
+      console.log(this.form.status);
       try {
-        const response = await axios.put(`http://localhost:8889/order/${this.form.id}`, this.form); // 后端更新请求
-        if (response.data.success === true) {
-          this.$message.success("修改成功！");
+        const response = await axios.put(`http://localhost:8889/order/passOrFailOrder`, this.form); // 后端更新请求
+        if (response.data.code === 200) {
+          // 如果返回成功，重新获取数据并关闭对话框
+          this.fetchData();
+          this.dialogVisible2 = false;
+          this.$message.success('审核订单更新成功');
         } else {
-          this.$message.error("修改失败");
+          // 如果返回失败，显示错误信息
+          this.$message.error(response.data.msg);
         }
-        this.dialogVisible2 = false;
-        this.fetchData();
       } catch (error) {
         console.error('Error updating order:', error);
-        this.$message.error("修改失败");
+        this.$message.error('更新订单信息失败');
       }
     },
     resetForm() {

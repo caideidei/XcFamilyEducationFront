@@ -48,7 +48,6 @@
             <el-row type="flex" justify="end" align="middle">
               <el-button size="small" @click="editRow(scope.row)">编辑</el-button>
               <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
-              <!-- 新增修改状态的按钮，放在右侧 -->
               <el-button size="small" :type="scope.row.status === 'active' ? 'danger' : 'success'"
                          @click="toggleStatus(scope.row)">
                 {{ scope.row.status === 'active' ? '禁用' : '启用' }}
