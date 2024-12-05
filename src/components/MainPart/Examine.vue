@@ -33,13 +33,22 @@
       </el-table-column>
       <el-table-column prop="subjects" label="擅长科目" min-width="150"/>
       <el-table-column prop="adminId" label="管理员ID" min-width="100"/>
-      <el-table-column prop="status" label="状态" min-width="100"/>
+      <el-table-column prop="status" label="状态" sortable min-width="100"/>
       <el-table-column prop="reason" label="审核理由" min-width="200"/>
       <el-table-column prop="createdAt" label="创建时间" min-width="180"/>
       <el-table-column label="操作" min-width="150">
         <template #default="scope">
           <div class="action-buttons">
-            <el-button size="small" @click="editRow(scope.row)">编辑</el-button>
+            <!-- 审核按钮，根据状态值判断显示文本和样式 -->
+            <el-button
+                size="small"
+                :type="scope.row.status === 'pending' ? 'primary' : 'default'"
+                @click="editRow(scope.row)"
+                style="width:45px;"
+                :disabled="scope.row.status !== 'pending'"
+            >
+              {{ scope.row.status === 'pending' ? '待审核' : '已审核' }}
+            </el-button>
             <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
           </div>
         </template>
@@ -74,29 +83,48 @@
           <el-input v-model="form.teacherId" disabled />
         </el-form-item>
         <el-form-item label="姓名">
-          <el-input v-model="form.realName" />
+          <el-input v-model="form.realName" disabled/>
         </el-form-item>
         <el-form-item label="性别">
-          <el-input v-model="form.sex" />
+          <el-input v-model="form.sex" disabled/>
         </el-form-item>
         <el-form-item label="资质">
-          <el-input v-model="form.qualification" />
+          <el-input v-model="form.qualification" disabled/>
         </el-form-item>
         <el-form-item label="简介">
-          <el-input v-model="form.intro" />
+          <el-input v-model="form.intro" disabled/>
         </el-form-item>
         <el-form-item label="擅长科目">
-          <el-input v-model="form.subjects" />
+          <el-input v-model="form.subjects" disabled/>
         </el-form-item>
         <el-form-item label="状态">
-          <el-input v-model="form.status" />
+          <el-select v-model="form.status" placeholder="请选择状态">
+            <el-option label="待审核" value="pending"></el-option>
+            <el-option label="通过" value="approved"></el-option>
+            <el-option label="未通过" value="rejected"></el-option>
+          </el-select>
         </el-form-item>
+
         <el-form-item label="审核理由">
-          <el-input v-model="form.reason" />
+          <el-select v-model="form.reason" placeholder="请选择审核理由" @change="handleReasonChange">
+            <el-option label="审核通过" value="审核通过" />
+            <el-option label="数据填写不完整" value="数据填写不完整" />
+            <el-option label="数据不真实" value="数据不真实" />
+            <el-option label="其他" value="其他" />
+          </el-select>
+
+          <!-- 如果选择 "其他"，可以进行自定义输入 -->
+          <el-input
+              v-if="form.reason === '其他'"
+              v-model="form.customReason"
+              placeholder="请输入自定义理由"
+              style="margin-top: 10px;"
+          />
         </el-form-item>
-        <el-form-item label="创建时间">
-          <el-input v-model="form.createdAt" disabled />
-        </el-form-item>
+
+        <!--        <el-form-item label="创建时间">-->
+<!--          <el-input v-model="form.createdAt" disabled />-->
+<!--        </el-form-item>-->
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible2 = false">取消</el-button>
@@ -143,7 +171,8 @@ export default {
         subjects: '',
         status: '',
         reason: '',
-        createdAt: ''
+        createdAt: '',
+        customReason:''
       },
       editingRow: null, // 当前编辑的行数据
       dialogVisible1: false, // 删除对话框
@@ -185,9 +214,9 @@ export default {
             qualification: examine.qualification, // 资质
             intro: examine.intro || '无', // 简介
             subjects: examine.subjects || '无', // 擅长科目
-            adminId: examine.adminId || '无', // 审核管理员ID
+            adminId: examine.adminId || null, // 审核管理员ID
             status: examine.status || '未定义', // 状态
-            reason: examine.reason || '无', // 审核理由
+            reason: examine.reason || null, // 审核理由
             createdAt: examine.createdAt ? new Date(examine.createdAt).toLocaleString() : '无', // 创建时间
           }));
         } else {
@@ -208,14 +237,26 @@ export default {
       this.form = { ...row };
     },
     async updateExamine() {
+      this.form.createdAt = null;
+      if (this.form.reason === '其他' && this.form.customReason) {
+        this.form.reason = this.form.customReason;
+      }
       try {
-        const response = await axios.put(`http://localhost:8081/examine/${this.form.id}`, this.form);
-        if (response.status === 200) {
+        // 发送审核修改请求
+        const response = await axios.put('http://localhost:8889/examine/approvedOrRejectedExamine', this.form);
+
+        if (response.data.code === 200) {
+          // 如果返回成功，重新获取数据并关闭对话框
           this.fetchData();
           this.dialogVisible2 = false;
+          this.$message.success('审核信息更新成功');
+        } else {
+          // 如果返回失败，显示错误信息
+          this.$message.error(response.data.msg);
         }
       } catch (error) {
         console.error('Error updating examine:', error);
+        this.$message.error('更新审核信息失败');
       }
     },
     confirmDelete(index, row) {
