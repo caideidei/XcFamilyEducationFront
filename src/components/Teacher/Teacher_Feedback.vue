@@ -18,15 +18,6 @@
       <el-button @click="filterMyFeedback" type="success">我的发言</el-button>
     </div>
 
-<!--    &lt;!&ndash; 留言展示 &ndash;&gt;-->
-<!--    <div class="feedback-list">-->
-<!--      <el-table :data="filteredData" border={false} style="width: 100%">-->
-<!--        <el-table-column prop="feedbackPerson" label="反馈人" min-width="100" />-->
-<!--        <el-table-column prop="feedbackRole" label="角色" min-width="100" />-->
-<!--        <el-table-column prop="feedbackText" label="反馈内容" min-width="250" />-->
-<!--        <el-table-column prop="feedbackTime" label="反馈时间" min-width="150" />-->
-<!--      </el-table>-->
-<!--    </div>-->
     <div class="feedback-list">
       <!-- 使用 v-for 循环展示每条反馈数据 -->
       <div v-for="feedback in filteredData" :key="feedback.id" class="feedback-card">
@@ -94,7 +85,7 @@ export default {
     // 获取所有留言数据
     async fetchFeedback() {
       try {
-        const response = await axios.get("http://localhost:8081/feedback/selectall");
+        const response = await axios.get("http://localhost:8889/feedback/selectAllFeedbacks");
         this.feedbackList = response.data.data;
       } catch (error) {
         console.error("Error fetching feedback:", error);
