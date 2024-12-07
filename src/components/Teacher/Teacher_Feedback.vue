@@ -1,55 +1,48 @@
 <template>
-  <!-- 搜索筛选栏 -->
-  <div class="search-container" style="margin-bottom: 20px;"> <!-- 增加搜索栏下方的距离 -->
-    <el-input
-        v-model="searchQuery"
-        placeholder="搜索内容"
-        class="search-input"
-        style="width: auto"
-    />
-    <el-button @click="search" type="primary" class="search-button" style="margin-left: 10px;">搜索</el-button>
-    <el-button @click="resetSearch" class="reset-button" style="margin-left: 10px;">重置</el-button>
-  </div>
-
+  <!-- 留言反馈界面 -->
   <div class="feedback-section">
-    <!-- 上部按钮 -->
-    <div class="button-container">
-      <el-button @click="openAddDialog" type="primary">我要发言</el-button>
-      <el-button @click="filterMyFeedback" type="success">我的发言</el-button>
+    <!-- 左上角标签 -->
+    <div class="header-label">留言反馈</div>
+
+    <!-- 搜索筛选栏 -->
+    <div class="search-container" style="margin-bottom: 20px;">
+      <el-input
+          v-model="searchQuery"
+          placeholder="搜索内容"
+          class="search-input"
+          style="width: auto"
+      />
+      <el-button @click="search" type="primary" class="search-button" style="margin-left: 10px;">搜索</el-button>
+      <el-button @click="resetSearch" class="reset-button" style="margin-left: 10px;">重置</el-button>
     </div>
 
-    <div class="feedback-list">
-      <!-- 使用 v-for 循环展示每条反馈数据 -->
-      <div v-for="feedback in filteredData" :key="feedback.id" class="feedback-card">
-        <!-- 反馈人和角色显示在同一行 -->
-        <div class="feedback-header">
-          <span>{{ feedback.feedbackPerson }}</span> - <span>{{ feedback.feedbackRole }}</span>
+    <div class="feedback-section">
+      <!-- 上部按钮 -->
+      <div class="button-container">
+        <el-button @click="addNewFeedback" type="paimary">我要反馈</el-button>
+        <!-- 上部按钮 -->
+          <el-button @click="toggleFeedbackType" type="success">
+            {{ isMyFeedback ? '所有反馈' : '我的反馈' }}
+          </el-button>
+
+      </div>
+
+      <div class="feedback-list">
+        <!-- 使用 v-for 循环展示每条反馈数据 -->
+        <div v-for="feedback in filteredData" :key="feedback.id" class="feedback-card">
+          <div class="feedback-header">
+            <img :src="feedback.picture" alt="头像" class="avatar"/>
+            <span class="username">{{ feedback.username }}</span>
+<!--            <span>{{ feedback.role }}</span>-->
+            <span class="message">{{ feedback.message }}</span>
+          </div>
+<!--          <div class="feedback-content">{{ feedback.message }}</div>-->
+          <div class="feedback-time">{{ feedback.createdAt }}</div>
         </div>
-        <!-- 反馈内容单独一行 -->
-        <div class="feedback-content">{{ feedback.feedbackText }}</div>
-        <!-- 反馈时间单独一行 -->
-        <div class="feedback-time">时间: {{ feedback.feedbackTime }}</div>
       </div>
-    </div>
 
-    <!-- 留言提交表单 -->
-    <el-dialog title="我要发言" v-model="addDialogVisible" width="30%">
-      <el-form :model="addForm" ref="addForm">
-        <el-form-item label="姓名">
-          <el-input v-model="addForm.feedbackPerson"></el-input>
-        </el-form-item>
-        <el-form-item label="角色">
-          <el-input v-model="addForm.feedbackRole"></el-input>
-        </el-form-item>
-        <el-form-item label="反馈内容">
-          <el-input type="textarea" v-model="addForm.feedbackText"></el-input>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="addDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="addFeedback">提交</el-button>
-      </div>
-    </el-dialog>
+
+    </div>
   </div>
 </template>
 
@@ -62,68 +55,85 @@ export default {
       searchQuery: '', // 搜索关键词
       feedbackList: [], // 全部留言
       filteredList: [], // 过滤后的留言
-      currentUser: '当前用户姓名', // 假设有一个当前用户的姓名
-      addDialogVisible: false,
-      addForm: {
-        feedbackPerson: '',
-        feedbackRole: '',
-        feedbackText: '',
-      },
+      isMyFeedback: false, // 默认显示所有反馈
     };
   },
   computed: {
     filteredData() {
       // 如果有过滤后的列表，按时间排序；否则对全体留言排序
       const data = this.filteredList.length ? this.filteredList : this.feedbackList;
-      return data.sort((a, b) => new Date(b.feedbackTime) - new Date(a.feedbackTime));
-    }
+      return data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    },
+    pagedData() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = this.currentPage * this.pageSize;
+      this.totalItems = this.filteredData.length;
+      return this.filteredData.slice(start, end);
+    },
   },
   created() {
     this.fetchFeedback();
   },
   methods: {
+    toggleFeedbackType() {
+      this.isMyFeedback = !this.isMyFeedback;  // 切换状态
+      if (this.isMyFeedback) {
+        this.filterMyFeedback();  // 显示我的反馈
+      } else {
+        this.fetchFeedback();  // 显示所有反馈
+      }
+    },
     // 获取所有留言数据
     async fetchFeedback() {
       try {
         const response = await axios.get("http://localhost:8889/feedback/selectAllFeedbacks");
-        this.feedbackList = response.data.data;
+        if (response.data.code === 200) {
+          // 映射数据到反馈列表
+          this.feedbackList = response.data.data.map(feedback => ({
+            id: feedback.id, // 留言ID
+            senderId: feedback.senderId, // 发送者ID
+            username: feedback.username || '匿名', // 用户名
+            role: feedback.role || '未定义', // 角色
+            picture: feedback.picture || '', // 头像
+            message: feedback.message || '无内容', // 反馈内容
+            createdAt: feedback.createdAt ? new Date(feedback.createdAt).toLocaleString() : '无时间', // 时间格式化
+          }));
+        } else {
+          this.$message.error(response.data.msg);
+        }
       } catch (error) {
         console.error("Error fetching feedback:", error);
       }
     },
     // 过滤我的留言
-    filterMyFeedback() {
-      this.filteredList = this.feedbackList.filter(
-          feedback => feedback.feedbackPerson === this.currentUser
-      );
-    },
-    // 打开发言对话框
-    openAddDialog() {
-      this.addDialogVisible = true;
-    },
-    // 提交留言
-    async addFeedback() {
+    async filterMyFeedback() {
       try {
-        const response = await axios.post("http://localhost:8081/feedback/insert", this.addForm);
-        if (response.data.success) {
-          this.$message.success("留言提交成功！");
-          this.fetchFeedback(); // 重新获取留言
-          this.addDialogVisible = false; // 关闭对话框
+        const response = await axios.get("http://localhost:8889/feedback/selectMyFeedbacks");
+        if (response.data.code === 200) {
+          // 映射数据到反馈列表
+          this.feedbackList = response.data.data.map(feedback => ({
+            id: feedback.id, // 留言ID
+            senderId: feedback.senderId, // 发送者ID
+            username: feedback.username || '匿名', // 用户名
+            role: feedback.role || '未定义', // 角色
+            picture: feedback.picture || '', // 头像
+            message: feedback.message || '无内容', // 反馈内容
+            createdAt: feedback.createdAt ? new Date(feedback.createdAt).toLocaleString() : '无时间', // 时间格式化
+          }));
         } else {
-          this.$message.error("提交失败！");
+          this.$message.error(response.data.msg);
         }
       } catch (error) {
-        console.error("Error submitting feedback:", error);
-        this.$message.error("提交失败！");
+        console.error("Error fetching feedback:", error);
       }
     },
     // 搜索功能
     search() {
       this.filteredList = this.feedbackList.filter(feedback =>
-          feedback.feedbackText.includes(this.searchQuery) || // 搜索反馈内容
-          feedback.feedbackPerson.includes(this.searchQuery) || // 搜索反馈人
-          feedback.feedbackRole.includes(this.searchQuery) ||// 搜索角色
-          feedback.feedbackTime.includes(this.searchQuery) // 搜索角色
+          feedback.message.includes(this.searchQuery) || // 搜索反馈内容
+          feedback.username.includes(this.searchQuery) || // 搜索反馈人
+          feedback.role.includes(this.searchQuery) || // 搜索角色
+          feedback.createdAt.includes(this.searchQuery) // 搜索时间
       );
     },
 
@@ -132,7 +142,6 @@ export default {
       this.searchQuery = '';
       this.filteredList = this.feedbackList;
     },
-
   }
 };
 </script>
@@ -141,44 +150,72 @@ export default {
 .feedback-section {
   padding: 20px;
   gap: 10px;
-  margin-top: -20px; /* 调整按钮上移的距离 */
+  margin-top: -20px;
   margin-left: -20px;
-  min-height: 605px; /*调整背景高度*/
-  border-radius: 10px; /* 设置圆角半径 */
+  min-height: 605px;
+  border-radius: 10px;
 }
+
+.header-label {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
 .button-container {
   margin-bottom: 20px;
 }
+
 .feedback-list {
   margin-top: 20px;
 }
+
 .dialog-footer {
   text-align: right;
 }
+
 .feedback-list {
   margin-top: 20px;
 }
 
 /* 新增：卡片样式的反馈展示 */
 .feedback-card {
-  background-color: #f9f9f9; /* 背景色 */
-  border: 1px solid #ddd; /* 边框 */
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
   padding: 15px;
-  margin-bottom: 10px; /* 每条反馈之间的间距 */
-  border-radius: 8px; /* 圆角边框 */
+  margin-bottom: 10px;
+  border-radius: 8px;
 }
 
 .feedback-header {
   font-weight: bold;
-  margin-bottom: 5px; /* 反馈人和角色与内容之间的间距 */
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.feedback-header .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 10px;
 }
 
 .feedback-content {
-  margin-bottom: 10px; /* 内容与反馈时间之间的间距 */
+  margin-bottom: 10px;
 }
-
+.username {
+  font-weight: bold;
+  margin-right: 20px; /* 用户名和反馈内容之间的间距 */
+}
 .feedback-time {
-  color: #888; /* 时间字体颜色 */
-  font-size: 12px; /* 时间字体大小 */
+  color: #888;
+  font-size: 12px;
+}
+.message {
+  font-size: 14px; /* 设置反馈内容的字体大小 */
+  color: #333; /* 文字颜色 */
+  font-weight: normal;
 }
 </style>
