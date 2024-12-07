@@ -256,15 +256,15 @@ export default {
       try {
         const response = await axios.post('http://localhost:8889/notice/insertNotice', this.addForm);
         if (response.data.code === 200) {
-          this.fetchData(); // 新增成功后重新获取数据
+          await this.fetchData(); // 新增成功后重新获取数据
           this.dialogVisible = false; // 关闭对话框
-          this.$message.success('新增反馈成功');
+          this.$message.success('新增公告成功');
         } else {
           this.$message.error(response.data.msg);
         }
       } catch (error) {
-        console.error('Error adding feedback:', error);
-        this.$message.error('新增反馈失败');
+        console.error('Error adding notice:', error);
+        this.$message.error('新增公告失败');
       }
     },
     resetForm() {
