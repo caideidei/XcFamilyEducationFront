@@ -237,6 +237,7 @@ export default {
 };
 </script>
 
+
 <style scoped>
 .study-square {
   padding: 20px;
