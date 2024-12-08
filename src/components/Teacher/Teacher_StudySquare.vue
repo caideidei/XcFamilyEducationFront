@@ -1,21 +1,46 @@
 <template>
   <div class="study-square">
-    <!-- 家教广场标签 -->
-    <div class="header-label">家教广场</div>
 
     <!-- 家教信息推荐标签和按钮放在同一行 -->
     <div class="section-header">
-      <div class="section-label">家教推荐</div>
+      <div class="section-label">{{ showAllOrders ? '所有家教' : '家教推荐' }}</div>
       <div class="button-container">
         <!-- 换一换标签 -->
-        <span class="change-label">换一换
-          <img src="/icons/换一换.png" alt="换一换" class="icon"/>
+        <span class="change-label" v-if="!showAllOrders" @click="fetchData">换一换
+           <img src="/icons/刷新.png" alt="换一换" class="icon"/>
         </span>
         <!-- 更多信息标签 -->
-        <span class="more-info-label">更多信息
-          <img src="/icons/更多.png" alt="更多信息" class="icon"/>
+        <span class="more-info-label" @click="toggleShowAllOrders">
+              {{ showAllOrders ? '返回' : '更多信息' }}
+              <img :src="showAllOrders ? '/icons/返回.png' : '/icons/更多.png'" alt="返回/更多信息" class="icon"/>
         </span>
       </div>
+    </div>
+
+    <div class="search-container" v-if="showAllOrders">
+      <el-input
+          v-model="searchQuery"
+          placeholder="搜索内容"
+          class="search-input"
+      />
+      <el-button @click="search" type="primary" class="search-button">搜索</el-button>
+      <el-button @click="resetSearch" class="reset-button">重置</el-button>
+    </div>
+
+    <!--  家教分类图片  -->
+    <div v-if="showAllOrders" class="tag-container">
+      <el-row class="tag-row" type="flex" justify="space-around">
+        <el-col v-for="tag in tags" :key="tag" :span="2">
+          <el-button
+              @click="searchByTag(tag)"
+              class="tag-button"
+              style="width: 100%; text-align: center;height: 60px"
+          >
+            <img :src="`/icons/${tag}.png`" alt="" class="tag-image"/>
+            {{ tag }}
+          </el-button>
+        </el-col>
+      </el-row>
     </div>
 
     <!-- 家教信息推荐表格 -->
@@ -64,12 +89,54 @@
         </template>
       </el-table-column>
       <el-table-column prop="createdAt" label="发布时间" sortable min-width="150"/>
+      <el-table-column label="操作" min-width="80">
+        <template #default="scope">
+          <el-button type="success" size="small" style="height: 35px" @click="handleAcceptOrder(scope.row)">
+            我要接单
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
-    <div class="separator"></div>
+    <div class="pagination-container" v-if="showAllOrders">
+      <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[1, 3, 5]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="totalItems"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+      />
+    </div>
 
-    <div class="section-label">家教分类</div>
-    <div class="category-content">家教分类内容展示区</div>
+    <br><br>
+
+<!--    <div class="section-label" v-if="!showAllOrders">家教分类</div>-->
+    <div class="category-content" v-if="!showAllOrders">
+      <div class="category-left">
+        <div class="category-title">家教分类</div>
+        <!-- 新增的标签部分 -->
+        <el-row class="tag-row" type="flex" justify="space-around">
+          <el-col v-for="(tag, index) in tags" :key="index" :span="7">
+            <el-button
+                @click="searchByTag(tag)"
+                class="tag-button"
+                style="width: 80%; text-align: center; height: 60px"
+            >
+              <img :src="`/icons/${tag}.png`" alt="" class="tag-image"/>
+              {{ tag }}
+            </el-button>
+          </el-col>
+        </el-row>
+      </div>
+
+      <div class="category-divider"></div>
+      <div class="category-right">
+        <div class="category-title">其他分类</div>
+        <!-- 其他分类内容展示区 -->
+      </div>
+    </div>
 
   </div>
 </template>
@@ -81,19 +148,19 @@ export default {
   data() {
     return {
       searchQuery: '',
-      tableData: [],
+      tableData: [],  // 保存所有家教信息
       currentPage: 1,
       pageSize: 10,
       totalItems: 0,
+      showAllOrders: false,  // 是否显示所有家教信息
+      tags: ['语文', '数学','英语','物理', '历史', '化学', '地理', '生物', '政治'],
     };
   },
   computed: {
     filteredData() {
       if (!this.searchQuery) return this.tableData;
       return this.tableData.filter(item =>
-          Object.values(item).some(val =>
-              String(val).toLowerCase().includes(this.searchQuery.toLowerCase())
-          )
+          item.subject.toLowerCase().includes(this.searchQuery.toLowerCase()) // 仅根据学科标签过滤
       );
     },
     pagedData() {
@@ -111,6 +178,7 @@ export default {
       try {
         const response = await axios.get('http://localhost:8889/order/selectAllPassedOrders');
         if (response.data.code === 200) {
+          // 获取所有数据
           this.tableData = response.data.data.map(order => ({
             id: order.id,
             parentId: order.parentId,
@@ -125,8 +193,11 @@ export default {
             status: order.status,
             createdAt: order.createdAt ? new Date(order.createdAt).toLocaleString() : '无', // 创建时间格式化
           }));
-          const shuffledData = this.shuffleArray(this.tableData);
-          this.tableData = shuffledData.slice(0, 3); // 只取前三条
+          if (!this.showAllOrders) {
+            // 只显示前三条
+            const shuffledData = this.shuffleArray(this.tableData);
+            this.tableData = shuffledData.slice(0, 4);
+          }
         } else {
           this.$message.error(response.data.msg);
         }
@@ -141,11 +212,26 @@ export default {
     resetSearch() {
       this.searchQuery = '';
     },
+    searchByTag(tag) {
+      this.searchQuery = tag;
+      this.showAllOrders = true; // 显示所有家教信息
+      this.fetchData(); // 根据标签重新获取家教信息
+    },
     handleSizeChange(size) {
       this.pageSize = size;
     },
     handleCurrentChange(page) {
       this.currentPage = page;
+    },
+    toggleShowAllOrders() {
+      this.showAllOrders = !this.showAllOrders;
+      if (!this.showAllOrders) {
+        this.searchQuery = '';  // 清空搜索栏
+      }
+      this.fetchData();  // 切换时重新加载数据
+    },
+    async handleAcceptOrder(order) {
+      this.$message.success("知道你要接单，别急，还没开发完");
     },
   },
 };
@@ -154,6 +240,12 @@ export default {
 <style scoped>
 .study-square {
   padding: 20px;
+  gap: 10px;
+  margin-top: -20px;
+  margin-left: -20px;
+  min-height: 605px;
+  border-radius: 10px;
+  height: 75vh;
 }
 
 .header-label {
@@ -192,14 +284,89 @@ export default {
   margin-right: 5px;
 }
 
-.separator {
-  height: 1px;
-  background-color: #ddd;
-  margin: 20px 0;
-}
-
 .category-content {
   font-size: 16px;
   color: #666;
+}
+
+.pagination-container {
+  margin-top: 20px; /* 添加与表格的距离 */
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.search-button,
+.reset-button {
+  margin-left: 10px;
+}
+
+.tag-image {
+  width: 30px;  /* 调整图片的宽度 */
+  height: 30px;  /* 调整图片的高度 */
+  margin-bottom: 5px;
+  object-fit: contain;  /* 确保图片不会失真 */
+
+}
+
+.tag-container {
+  margin-bottom: 20px; /* 增加与表格之间的距离，您可以根据需要调整这个值 */
+}
+
+.tag-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 12px;  /* 为按钮添加圆角，您可以根据需要调整这个值 */
+  padding: 5px;  /* 添加内边距来保证圆角效果明显 */
+}
+
+.el-table {
+  border-radius: 10px; /* 表格圆角 */
+  overflow: hidden;   /* 保证表格内容显示时圆角不被覆盖 */
+}
+
+.el-table th,
+.el-table td {
+  padding: 10px; /* 给表格单元格增加内边距，使圆角更加明显 */
+}
+
+.el-pagination {
+  border-radius: 10px; /* 分页圆角 */
+}
+
+.category-content {
+  display: flex;
+  justify-content: space-between; /* 使左右两部分在两边 */
+  align-items: flex-start;
+}
+
+.category-left, .category-right {
+  width: 48%; /* 两个部分各占 48% 宽度，留出空间给竖线 */
+}
+
+.category-divider {
+  width: 1px;
+  background-color: #ccc;
+  height: 100%; /* 竖线的高度占满容器 */
+}
+
+.category-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.el-col {
+  margin-bottom: 20px !important;  /* 为每一行添加间隔 */
 }
 </style>
