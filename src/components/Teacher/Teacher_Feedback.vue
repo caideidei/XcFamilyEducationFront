@@ -10,7 +10,7 @@
           v-model="searchQuery"
           placeholder="搜索内容"
           class="search-input"
-          style="width: auto"
+          style="width: auto; height: 40px"
       />
       <el-button @click="search" type="primary" class="search-button" style="margin-left: 10px;">搜索</el-button>
       <el-button @click="resetSearch" type="" class="reset-button" style="margin-left: 10px;">重置</el-button>
