@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import Teacher_HomeSection from './Teacher_HomeSection.vue';
+import Teacher_StudySquare from './Teacher_StudySquare.vue';
 import Teacher_MyTutoring from './Teacher_MyTutoring.vue';
 import Teacher_SystemAnnouncements from './Teacher_SystemAnnouncements.vue';
 import Teacher_Feedback from './Teacher_Feedback.vue';
@@ -15,7 +15,7 @@ export default {
     selectedSection: String,
   },
   components: {
-    Teacher_HomeSection,
+    Teacher_StudySquare,
     Teacher_MyTutoring,
     Teacher_SystemAnnouncements,
     Teacher_Feedback,
@@ -24,7 +24,7 @@ export default {
     getComponent(section) {
       switch (section) {
         case '家教广场':
-          return 'Teacher_HomeSection';
+          return 'Teacher_StudySquare';
         case '我的家教':
           return 'Teacher_MyTutoring';
         case '系统公告':

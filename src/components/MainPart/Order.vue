@@ -71,7 +71,8 @@
                 :disabled="scope.row.status !== 'pendingReview'"
             >
               {{ scope.row.status === 'pendingReview' ? '待审核' : '已审核' }}
-            </el-button>            <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
+            </el-button>
+            <el-button size="small" type="danger" @click="confirmDelete(scope.$index, scope.row)">删除</el-button>
           </div>
         </template>
       </el-table-column>
