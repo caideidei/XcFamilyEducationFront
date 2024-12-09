@@ -50,24 +50,48 @@ const router = createRouter({
 });
 // 路由守卫
 router.beforeEach((to, from, next) => {
-    const role = localStorage.getItem('role'); // 获取当前角色
+    const role = localStorage.getItem('role'); // 获取角色
+    const token = localStorage.getItem('token'); // 获取 token
 
-    // 如果路由需要特定角色且当前角色不匹配
-    if (to.meta.role && to.meta.role !== role) {
-        // 角色不匹配时，跳转到指定页面
-        if (role === 'teacher') {
-            next('/teacher'); // 如果是教师角色，跳转到教师页面
-        } else if (role === 'parent') {
-            next('/parent'); // 如果是家长角色，跳转到家长页面
-        } else if (role === 'admin') {
-            next('/home'); // 如果是家长角色，跳转到家长页面
+    // 如果没有 token，强制跳转到登录页面
+    if (!token) {
+        if (to.path !== '/login') {
+            return next('/login');
         }
-        else {
-            next('/login'); // 如果是其他角色，跳转到登录页面
+    } else if (role) {
+        // 有 token 和 role，根据角色跳转
+        if (to.path === '/login') {
+            // 如果已登录但访问登录页面，跳转到对应角色的主页
+            switch (role) {
+                case 'teacher':
+                    return next('/teacher');
+                case 'parent':
+                    return next('/parent');
+                case 'admin':
+                    return next('/home');
+                default:
+                    return next('/login');
+            }
         }
-    } else {
-        next(); // 角色匹配，正常跳转
+
+        // 检查路由权限
+        if (to.meta.role && to.meta.role !== role) {
+            // 角色和访问页面不匹配
+            switch (role) {
+                case 'teacher':
+                    return next('/teacher');
+                case 'parent':
+                    return next('/parent');
+                case 'admin':
+                    return next('/home');
+                default:
+                    return next('/login');
+            }
+        }
     }
+
+    next(); // 放行
 });
+
 
 export default router;

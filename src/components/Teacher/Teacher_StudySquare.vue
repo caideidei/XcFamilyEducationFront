@@ -134,7 +134,7 @@
       <div class="category-divider"></div>
       <div class="category-right">
         <div class="category-title">其他分类</div>
-        <!-- 其他分类内容展示区 -->
+        <h1>待开发</h1>
       </div>
     </div>
 
