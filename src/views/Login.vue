@@ -1,9 +1,24 @@
 <template>
   <div class="login-container">
     <div class="form-container">
-      <h2>用户登录</h2>
+<!--      <h2>用户登录</h2>-->
+      <br>
+      <div class="login-toggle">
+        <span
+            :class="{ active: loginMethod === 'password' }"
+            @click="switchToPasswordLogin"
+        >
+          账号密码登录
+        </span>
+        <span
+            :class="{ active: loginMethod === 'phoneCode' }"
+            @click="switchToPhoneCodeLogin"
+        >
+          手机验证码登录
+        </span>
+      </div>
       <form @submit.prevent="login">
-        <div class="form-group">
+        <div v-if="loginMethod === 'password'" class="form-group">
           <label for="phoneNumber">账号：</label>
           <input
               type="text"
@@ -13,7 +28,7 @@
               required
           />
         </div>
-        <div class="form-group">
+        <div v-if="loginMethod === 'password'" class="form-group">
           <label for="password">密码：</label>
           <input
               type="password"
@@ -23,7 +38,46 @@
               required
           />
         </div>
+        <div v-if="loginMethod === 'phoneCode'" class="form-group">
+          <label for="phone">手机号：</label>
+          <input
+              type="text"
+              id="phone"
+              v-model="phoneNumber"
+              placeholder="请输入手机号"
+              required
+          />
+        </div>
+        <div v-if="loginMethod === 'phoneCode'" class="form-group">
+          <label for="phoneCode">验证码：</label>
+          <div class="code-container">
+            <input
+                type="text"
+                id="phoneCode"
+                v-model="phoneCode"
+                placeholder="请输入验证码"
+                required
+            />
+            <button
+                type="button"
+                @click="sendCode"
+                :disabled="sendingCode || countdown > 0"
+                :style="{
+                    width: '160px',
+                    height: '34px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: countdown > 0 ? '#ccc' : '#007bff'
+                  }"
+                >
+              <span v-if="countdown > 0" :style="{ fontSize: '12px' }">{{ countdown }}s 后重新获取</span>
+              <span v-else>发送验证码</span>
+            </button>
 
+
+          </div>
+        </div>
         <button type="submit">登录</button>
       </form>
       <p class="register-link">
@@ -34,90 +88,111 @@
   </div>
 </template>
 
+
 <script>
-import axios from 'axios';
+import axios from "axios";
 
 export default {
   data() {
     return {
-      phoneNumber: '',
-      password: '',
+      phoneNumber: "",
+      password: "",
+      phoneCode: "",
       errorMessage: null,
+      loginMethod: "password", // 当前登录方式: 'password' 或 'phoneCode'
+      sendingCode: false, // 发送验证码状态
+      countdown: 0, // 用于显示倒计时
     };
   },
   methods: {
+    switchToPasswordLogin() {
+      this.loginMethod = "password";
+      this.errorMessage = null; // 清空错误信息
+    },
+    switchToPhoneCodeLogin() {
+      this.loginMethod = "phoneCode";
+      this.errorMessage = null; // 清空错误信息
+    },
     async login() {
       try {
-        const response = await axios.post('http://localhost:8889/user/login', {
-          phoneNumber: this.phoneNumber,
-          password: this.password,
-        });
+        const url =
+            this.loginMethod === "password"
+                ? "http://localhost:8889/user/login"
+                : "http://localhost:8889/user/loginByPhoneCode";
+
+        const payload =
+            this.loginMethod === "password"
+                ? { phoneNumber: this.phoneNumber, password: this.password }
+                : { phoneNumber: this.phoneNumber, phoneCode: this.phoneCode };
+
+        const response = await axios.post(url, payload);
 
         if (response.data.code === 200) {
-          console.log("登录得到的信息如下："+response.data.data.token)
-          // 获取 token 并保存到 localStorage
           const token = response.data.data.token;
-          localStorage.setItem('token', token);  // 保存 token
-          // 登录成功后获取用户信息
+          localStorage.setItem("token", token);
           await this.fetchUserInfo(token);
-          // 显示成功消息
           this.$message.success("登录成功");
-
-          // 跳转到用户角色对应的界面
-          const role = localStorage.getItem('role');
-          if (role === 'teacher') {
-            this.$router.push({ name: 'Teacher' }); // 跳转到教师界面
-          } else if (role === 'parent') {
-            this.$router.push({ name: 'Parent' }); // 跳转到家长界面
-          } else if (role === 'admin') {
-            this.$router.push({ name: 'Home' }); // 跳转到管理员界面
+          const role = localStorage.getItem("role");
+          if (role === "teacher") {
+            this.$router.push({ name: "Teacher" });
+          } else if (role === "parent") {
+            this.$router.push({ name: "Parent" });
+          } else if (role === "admin") {
+            this.$router.push({ name: "Home" });
           }
         } else {
-          this.errorMessage = response.data.msg || '登录失败，请检查账号和密码';
+          this.errorMessage = response.data.msg || "登录失败";
         }
       } catch (error) {
-        this.errorMessage = '登录失败，请检查账号和密码';
+        this.errorMessage = "登录失败，请检查输入信息";
         console.error(error);
       }
     },
-    // async redirectBasedOnRole() {
-    //   try {
-    //     const token = localStorage.getItem('token');
-    //     const response = await axios.get('http://localhost:8889/user/user-info', {
-    //       headers: { 'token': token } // 传递 token 作为请求头
-    //     });
-    //
-    //     if (response.data.code === 200) {
-    //       const userInfo = response.data.data;
-    //       const role = userInfo.role; // 获取用户角色
-    //
-    //       if (role === 'teacher') {
-    //         this.$router.push({ name: 'Teacher' }); // 跳转到教师界面
-    //       } else if (role === 'parent') {
-    //         this.$router.push({ name: 'Parent' }); // 跳转到家长界面
-    //       } else if (role === 'admin') {
-    //         this.$router.push({ name: 'Home' }); // 跳转到管理员界面
-    //       }
-    //     } else {
-    //       console.error("获取用户信息失败", response.data.msg);
-    //     }
-    //   } catch (error) {
-    //     console.error("请求用户信息失败", error);
-    //   }
-    // },
+    async sendCode() {
+      if (!this.phoneNumber) {
+        this.$message.error("请输入手机号");
+        return;
+      }
+      try {
+        this.sendingCode = true;
+        const response = await axios.get(
+            "http://localhost:8889/test/common/sendMessage",
+            { params: { phone: this.phoneNumber } }
+        );
+        if (response.data.code === 200) {
+          this.$message.success("验证码已发送");
+          this.countdown = 60; // 设置倒计时60秒
+          const interval = setInterval(() => {
+            if (this.countdown <= 0) {
+              clearInterval(interval);
+              this.sendingCode = false; // 恢复按钮状态
+            } else {
+              this.countdown--; // 每秒减1
+            }
+          }, 1000);
+        } else {
+          this.$message.error(response.data.msg || "验证码发送失败");
+        }
+      } catch (error) {
+        this.$message.error("验证码发送失败，请重试");
+        console.error(error);
+      }
+    },
+    toggleLoginMethod() {
+      this.loginMethod = this.loginMethod === "password" ? "phoneCode" : "password";
+      this.errorMessage = null; // 清空错误信息
+    },
     async fetchUserInfo(token) {
       try {
-        const response = await axios.get('http://localhost:8889/user/user-info');
-
+        const response = await axios.get("http://localhost:8889/user/user-info");
         if (response.data.code === 200) {
           const userInfo = response.data.data;
-          this.userName = userInfo.username;  // 更新用户名
-          this.userPicture = userInfo.picture ? userInfo.picture : 'src/images/3.jpg';
+          this.userName = userInfo.username;
+          this.userPicture = userInfo.picture || "src/images/3.jpg";
           this.role = userInfo.role;
-          // 保存用户信息到 localStorage
-          localStorage.setItem('userName', this.userName);
-          localStorage.setItem('userPicture', this.userPicture);
-          localStorage.setItem('role',this.role);
+          localStorage.setItem("userName", this.userName);
+          localStorage.setItem("userPicture", this.userPicture);
+          localStorage.setItem("role", this.role);
         } else {
           console.error("获取用户信息失败", response.data.msg);
         }
@@ -125,10 +200,9 @@ export default {
         console.error("请求用户信息失败", error);
       }
     },
-
     goToRegister() {
-      this.$router.push('/register');  // 跳转到注册页面
-    }
+      this.$router.push("/register");
+    },
   },
 };
 </script>
@@ -212,4 +286,46 @@ button:hover {
 .register-link span:hover {
   text-decoration: underline;
 }
+.code-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.login-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 20px; /* 设置间距 */
+  margin-bottom: 20px; /* 与其他部分保持距离 */
+  font-size: 18px; /* 字体大小 */
+  font-weight: bold; /* 加粗 */
+}
+
+.login-toggle span {
+  font-size: 16px;
+  cursor: pointer;
+  color: #555;
+  position: relative;
+  transition: color 0.3s;
+}
+
+.login-toggle span:hover {
+  color: #007bff;
+}
+
+.login-toggle span.active {
+  color: #007bff;
+  font-weight: bold;
+}
+
+.login-toggle span.active::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: #007bff;
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+}
+
 </style>

@@ -9,40 +9,40 @@ import axios from 'axios';
 
 const app = createApp(App); // 创建 Vue 应用实例
 
-// 检查 localStorage 数据并跳转
-const role = localStorage.getItem('role');
-const token = localStorage.getItem('token');
-
-if (token && role) {
-    switch (role) {
-        case 'teacher':
-            router.push('/teacher'); // 跳转到教师页面
-            break;
-        case 'parent':
-            router.push('/parent'); // 跳转到家长页面
-            break;
-        case 'admin':
-            router.push('/home'); // 跳转到管理员页面
-            break;
-        default:
-            router.push('/login'); // 如果 role 不合法，跳转到登录页
-    }
-}
+// // 检查 localStorage 数据并跳转
+// const role = localStorage.getItem('role');
+// const token = localStorage.getItem('token');
+//
+// if (token && role) {
+//     switch (role) {
+//         case 'teacher':
+//             router.push('/teacher'); // 跳转到教师页面
+//             break;
+//         case 'parent':
+//             router.push('/parent'); // 跳转到家长页面
+//             break;
+//         case 'admin':
+//             router.push('/home'); // 跳转到管理员页面
+//             break;
+//         default:
+//             router.push('/login'); // 如果 role 不合法，跳转到登录页
+//     }
+// }
 
 app.use(ElementPlus, { locale: zhCn }); // 使用 ElementPlus 和语言包
 
 // 防止localStorage被修改
-// window.addEventListener('storage', function(e) {
-//     localStorage.setItem(e.key, e.oldValue)
-// });
-// // 防止sessionStorage被修改
-// window.addEventListener('storage', function(e) {
-//     this.sessionStorage.setItem(e.key, e.oldValue)
-// });
-// // 注册 ElementPlus 图标组件
-// for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-//     app.component(key, component);
-// }
+window.addEventListener('storage', function(e) {
+    localStorage.setItem(e.key, e.oldValue)
+});
+// 防止sessionStorage被修改
+window.addEventListener('storage', function(e) {
+    this.sessionStorage.setItem(e.key, e.oldValue)
+});
+// 注册 ElementPlus 图标组件
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component);
+}
 
 // 添加响应拦截器
 axios.interceptors.response.use(

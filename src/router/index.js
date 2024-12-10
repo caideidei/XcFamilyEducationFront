@@ -53,6 +53,10 @@ router.beforeEach((to, from, next) => {
     const role = localStorage.getItem('role'); // 获取角色
     const token = localStorage.getItem('token'); // 获取 token
 
+    if (to.path === '/register') {
+        return next();
+    }
+
     // 如果没有 token，强制跳转到登录页面
     if (!token) {
         if (to.path !== '/login') {
