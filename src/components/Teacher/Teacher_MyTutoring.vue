@@ -131,11 +131,21 @@
         </el-table-column>
       </el-table>
 
+      <br>
+      <el-button
+          type="primary"
+          size="small"
+          @click="openPublishHomeworkDialog"
+          style="width: 100px;height: 40px;border-radius: 10px"
+      >
+        布置作业
+      </el-button>
+
       <div class="homework-section" style="margin-top: 10px;">
         <h4 style="color: #999; margin-top: 10px;">待完成作业</h4>
         <el-table :data="pendingHomework" style="width: 100%">
-          <el-table-column label="作业ID" prop="id" width="80px"></el-table-column>
-          <el-table-column label="作业标题" prop="title" width="150px">
+<!--          <el-table-column label="作业ID" prop="id" width="100px"></el-table-column>-->
+          <el-table-column label="作业标题" prop="title" width="200px">
             <template #default="scope">
               <el-tooltip :content="scope.row.title" placement="top">
                 <el-input
@@ -148,7 +158,7 @@
               </el-tooltip>
             </template>
           </el-table-column>
-          <el-table-column label="描述" prop="description" width="200px">
+          <el-table-column label="描述" prop="description" width="300px">
             <template #default="scope">
               <el-tooltip :content="scope.row.description" placement="top">
                 <el-input
@@ -161,12 +171,12 @@
               </el-tooltip>
             </template>
           </el-table-column>
-          <el-table-column label="截止时间" prop="deadline" width="180px">
+          <el-table-column label="截止时间" prop="deadline" width="250px">
             <template #default="scope">
               {{ new Date(scope.row.deadline).toLocaleString() }}
             </template>
           </el-table-column>
-          <el-table-column label="状态" prop="status" width="100px">
+          <el-table-column label="状态" prop="status" width="150px">
             <template #default="scope">
                 <span>
                   {{
@@ -179,27 +189,6 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="文件URL" prop="fileUrl" width="100px">
-            <template #default="scope">
-              <el-link v-if="scope.row.fileUrl" :href="scope.row.fileUrl" target="_blank">查看附件</el-link>
-              <span v-else>无</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="教师反馈" prop="review" width="150px">
-            <template #default="scope">
-              <el-tooltip :content="scope.row.review || '待反馈'" placement="top">
-                <el-input
-                    v-if="scope.row.review"
-                    type="textarea"
-                    :rows="1"
-                    :value="scope.row.review"
-                    disabled
-                    style="resize: none; height: 50px; overflow: hidden; text-overflow: ellipsis; white-space: normal; max-height: 50px;"
-                />
-                <span v-else>待反馈</span>
-              </el-tooltip>
-            </template>
-          </el-table-column>
 
           <el-table-column label="操作" width="180px">
             <template #default="scope">
@@ -208,17 +197,20 @@
                   size="small"
                   type="primary">修改</el-button>
               <el-button
-                  @click="evaluateHomework(scope.row)"
+                  @click="confirmDelete(scope.row.id)"
                   size="small"
-                  type="success">评价</el-button>
+                  type="danger"
+              >删除</el-button>
             </template>
           </el-table-column>
         </el-table>
 
+
+
         <h4 style="color: #999; margin-top: 10px;">已完成作业</h4>
         <el-table :data="finishedHomework" style="width: 100%">
-          <el-table-column label="作业ID" prop="id" width="80px"></el-table-column>
-          <el-table-column label="作业标题" prop="title" width="150px">
+<!--          <el-table-column label="作业ID" prop="id" width="80px"></el-table-column>-->
+          <el-table-column label="作业标题" prop="title" width="180px">
             <template #default="scope">
               <el-tooltip :content="scope.row.title" placement="top">
                 <el-input
@@ -268,7 +260,7 @@
               <span v-else>无</span>
             </template>
           </el-table-column>
-          <el-table-column label="教师反馈" prop="review" width="150px">
+          <el-table-column label="教师反馈" prop="review" width="200px">
             <template #default="scope">
               <el-tooltip :content="scope.row.review || '待反馈'" placement="top">
                 <el-input
@@ -284,22 +276,8 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="180px">
+          <el-table-column label="操作" width="100px">
             <template #default="scope">
-              <el-button
-                  @click="editHomework(scope.row)"
-                  size="small"
-                  type="primary"
-                  :disabled="!scope.row.editable"
-                  :style="{
-                  backgroundColor: scope.row.editable ? '' : '#dcdcdc',
-                  borderColor: scope.row.editable ? '' : '#dcdcdc',
-                  color: scope.row.editable ? '' : '#888',
-                  cursor: scope.row.editable ? 'pointer' : 'not-allowed'
-                  }">
-                  修改
-              </el-button>
-
               <el-button
                   @click="evaluateHomework(scope.row)"
                   size="small"
@@ -371,6 +349,58 @@
       </div>
     </el-dialog>
 
+
+    <el-dialog
+        v-model="publishDialogVisible"
+        width="30%"
+        @close="resetPublishForm"
+    >
+      <template #header>
+        <div style="font-size: 18px; font-weight: bold; color: #333;margin-left: 10px;">布置作业</div>
+      </template>
+      <br>
+      <el-form :model="publishForm" label-width="80px">
+        <el-form-item label="作业标题">
+          <el-input v-model="publishForm.title" placeholder="请输入作业标题"></el-input>
+        </el-form-item>
+        <el-form-item label="作业描述">
+          <el-input
+              type="textarea"
+              v-model="publishForm.description"
+              placeholder="请输入作业描述"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="截止日期">
+          <el-date-picker
+              v-model="publishForm.deadline"
+              type="datetime"
+              placeholder="选择截止日期"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+          ></el-date-picker>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer" style="text-align: right;">
+        <el-button @click="publishDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitPublishHomework">确认</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog
+        v-model="deleteDialogVisible"
+        title="确认删除"
+        width="20%"
+        :style="{ height: '20%', marginTop: '20%' }"
+        @close="resetDeleteDialog"
+    >
+      <span>您确定要删除此作业吗？</span>
+      <div slot="footer" class="dialog-footer" style="text-align: right;">
+        <br>
+        <el-button @click="deleteDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="deleteHomework">确认</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -391,6 +421,15 @@ export default {
       homeworkData: [], // 存储作业信息
       dialogVisible: false,  // 控制评论对话框显示与否
       dialogVisible2: false,  // 控制修改对话框显示与否
+      publishDialogVisible: false, // 控制布置作业对话框的显示与隐藏
+      deleteDialogVisible: false, // 控制删除确认对话框的显示
+      deleteHomeworkId: null,    // 存储要删除的作业 ID
+      publishForm: {              // 布置作业表单数据
+        orderId: '',
+        title: '',
+        description: '',
+        deadline: ''
+      },
       form: {
         id: null,
         orderId: null,
@@ -546,6 +585,67 @@ export default {
         fileUrl: '',
         review: ''
       };
+    },
+    // 打开布置作业对话框
+    openPublishHomeworkDialog() {
+      this.publishDialogVisible = true;
+    },
+    // 提交布置作业请求
+    async submitPublishHomework() {
+      this.publishForm.orderId = this.currentOrder.id;
+      try {
+        const response = await axios.post('http://localhost:8889/homework/publish', this.publishForm);
+        if (response.data.code === 200) {
+          this.$message.success('作业布置成功！');
+          this.publishDialogVisible = false; // 关闭对话框
+          this.resetPublishForm();           // 重置表单数据
+          await this.publishHomework(this.currentOrder);
+        } else {
+          this.$message.error(response.data.msg);
+        }
+      } catch (error) {
+        console.error('Error publishing homework:', error);
+        this.$message.error('布置作业失败，请稍后重试');
+      }
+    },
+    // 重置布置作业表单
+    resetPublishForm() {
+      this.publishForm = {
+        orderId: '',
+        title: '',
+        description: '',
+        deadline: ''
+      };
+    },
+    // 显示删除确认对话框
+    confirmDelete(homeworkId) {
+      this.deleteHomeworkId = homeworkId;
+      this.deleteDialogVisible = true;
+    },
+
+    // 删除作业
+    async deleteHomework() {
+      try {
+        const response = await axios.delete('http://localhost:8889/homework/deleteHomework', {
+          params: { id: this.deleteHomeworkId }
+        });
+        if (response.data.code === 200) {
+          this.$message.success('作业删除成功！');
+          // 刷新作业列表或重新加载数据
+          this.deleteDialogVisible = false; // 关闭对话框
+          await this.publishHomework(this.currentOrder);
+        } else {
+          this.$message.error(response.data.msg);
+        }
+      } catch (error) {
+        console.error('Error deleting homework:', error);
+        this.$message.error('删除作业失败，请稍后重试');
+      }
+    },
+
+    // 关闭对话框并重置数据
+    resetDeleteDialog() {
+      this.deleteHomeworkId = null;
     },
 
   },
