@@ -60,8 +60,23 @@
         <div class="section-header">
           <div class="section-label">我的评价</div>
         </div>
-        <p>这里是我的评价部分，暂时显示简单文字。</p>
+        <div class="feedback-list" style="overflow-y: auto; max-height: 400px;">
+          <!-- 使用 v-for 循环展示每条反馈数据 -->
+          <div v-for="review in reviews" :key="review.id" class="feedback-card">
+            <div class="feedback-header">
+              <div class="feedback-header-left">
+                <span class="parentId">家长ID: {{ review.parentId }}</span>
+                <span class="rating">评分: {{ review.rating }}</span>
+              </div>
+            </div>
+            <div class="feedback-content">
+              <p>{{ review.review }}</p>
+            </div>
+            <div class="feedback-time">{{ review.createdAt }}</div>
+          </div>
+        </div>
       </div>
+
     </div>
 
     <!-- 布置作业界面 -->
@@ -424,6 +439,7 @@ export default {
       publishDialogVisible: false, // 控制布置作业对话框的显示与隐藏
       deleteDialogVisible: false, // 控制删除确认对话框的显示
       deleteHomeworkId: null,    // 存储要删除的作业 ID
+      reviews: [], // 存储从后端获取的评价数据
       publishForm: {              // 布置作业表单数据
         orderId: '',
         title: '',
@@ -472,8 +488,22 @@ export default {
   },
   created() {
     this.fetchData();
+    this.fetchReviews();
   },
   methods: {
+    async fetchReviews() {
+      try {
+        const response = await axios.get('http://localhost:8889/review/selectMyReviews');
+        if (response.data.code === 200) {
+          this.reviews = response.data.data; // 保存评价数据
+        } else {
+          this.$message.error(response.data.msg); // 错误提示
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        this.$message.error('获取评价数据失败，请稍后重试');
+      }
+    },
     async fetchData() {
       try {
         const response = await axios.get('http://localhost:8889/order/teacherSelectOrders');
@@ -712,4 +742,57 @@ export default {
   font-weight: bold;
 }
 
+.right-section {
+  padding: 20px;
+}
+
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-label {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.feedback-list {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.feedback-card {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.feedback-header-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.rating {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #f39c12;
+}
+
+.feedback-content {
+  font-size: 14px;
+  color: #333;
+}
+
+.feedback-time {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #999;
+}
 </style>
