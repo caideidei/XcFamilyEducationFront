@@ -277,6 +277,9 @@ export default {
 .change-label, .more-info-label {
   display: flex;
   align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .icon {

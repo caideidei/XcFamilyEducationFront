@@ -1,6 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import ElementPlus from 'element-plus';
+import ElementPlus, {ElMessage} from 'element-plus';
 import 'element-plus/dist/index.css';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'; // 使用图标
 import zhCn from 'element-plus/es/locale/lang/zh-cn'; // 引入中文语言包
@@ -48,7 +48,7 @@ axios.interceptors.response.use(
                         response.config.headers['token'] = newToken;
                         return axios(response.config); // 返回新的请求
                     } else {
-                        console.log("回复"+refreshResponse)
+                        // console.log("回复"+refreshResponse)
                         // 刷新失败，跳转到登录页面
                         localStorage.removeItem('userName');
                         localStorage.removeItem('userPicture');
@@ -56,7 +56,7 @@ axios.interceptors.response.use(
                         localStorage.removeItem('token');
                         localStorage.removeItem('refreshToken');
                         router.push('/login');
-                        return Promise.reject('刷新 Token 失败');
+                        ElMessage.error('刷新 Token 失败，请重新登录');
                     }
                 });
             } else {
@@ -67,14 +67,14 @@ axios.interceptors.response.use(
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
                 router.push('/login');
-                return Promise.reject('Token 和 Refresh Token 均无效');
+                ElMessage.error('刷新 Token 失败，请重新登录');
             }
         }
         return response; // 确保返回 response
     },
-    error => {
-        return Promise.reject(error); // 将错误继续传递
-    }
+    // error => {
+    //     return Promise.reject(error); // 将错误继续传递
+    // }
 );
 
 
