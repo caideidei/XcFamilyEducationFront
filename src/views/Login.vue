@@ -129,7 +129,9 @@ export default {
 
         if (response.data.code === 200) {
           const token = response.data.data.token;
+          const refreshToken = response.data.data.refreshToken;
           localStorage.setItem("token", token);
+          localStorage.setItem("refreshToken",refreshToken);
           await this.fetchUserInfo(token);
           this.$message.success("登录成功");
           const role = localStorage.getItem("role");
@@ -156,7 +158,7 @@ export default {
       try {
         this.sendingCode = true;
         const response = await axios.get(
-            "http://localhost:8889/test/common/sendMessage",
+            "http://localhost:8889/common/sendMessage",
             { params: { phone: this.phoneNumber } }
         );
         if (response.data.code === 200) {

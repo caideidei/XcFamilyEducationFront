@@ -67,6 +67,7 @@ export default {
           localStorage.removeItem('userName');
           localStorage.removeItem('userPicture');
           localStorage.removeItem('role');
+          localStorage.removeItem('refreshToken');
           this.$router.push('/login'); // 跳转到登录页面
           this.$message.success(response.data.msg); // 提示成功退出
         } else {

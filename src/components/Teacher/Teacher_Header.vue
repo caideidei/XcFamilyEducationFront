@@ -87,6 +87,7 @@ export default {
       localStorage.removeItem('userName');
       localStorage.removeItem('userPicture');
       localStorage.removeItem('role');
+      localStorage.removeItem('refreshToken');
       this.dialogVisible = false;
       this.$router.push('/login'); // 跳转到 Login.vue
     },
