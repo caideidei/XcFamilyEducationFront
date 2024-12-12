@@ -60,14 +60,21 @@
         <div class="section-header">
           <div class="section-label">我的评价</div>
         </div>
+        <div v-if="reviews.length === 0" class="no-reviews">
+          当前评价为空
+        </div>
         <div class="feedback-list" style="overflow-y: auto; max-height: 400px;">
           <!-- 使用 v-for 循环展示每条反馈数据 -->
           <div v-for="review in reviews" :key="review.id" class="feedback-card">
             <div class="feedback-header">
               <div class="feedback-header-left">
                 <span class="parentId">家长ID: {{ review.parentId }}</span>
-                <span class="rating">评分: {{ review.rating }}</span>
               </div>
+              <div class="rating">
+                <span v-for="n in 5" :key="n" :class="{'filled': n <= review.rating, 'empty': n > review.rating}" class="star">
+
+                </span>
+              </div> <!-- 评分与家长ID在同一行 -->
             </div>
             <div class="feedback-content">
               <p>{{ review.review }}</p>
@@ -221,10 +228,8 @@
         </el-table>
 
 
-
         <h4 style="color: #999; margin-top: 10px;">已完成作业</h4>
         <el-table :data="finishedHomework" style="width: 100%">
-<!--          <el-table-column label="作业ID" prop="id" width="80px"></el-table-column>-->
           <el-table-column label="作业标题" prop="title" width="180px">
             <template #default="scope">
               <el-tooltip :content="scope.row.title" placement="top">
@@ -256,7 +261,7 @@
               {{ new Date(scope.row.deadline).toLocaleString() }}
             </template>
           </el-table-column>
-          <el-table-column label="状态" prop="status" width="100px">
+          <el-table-column label="状态" prop="status" width="80px">
             <template #default="scope">
                 <span>
                   {{
@@ -269,9 +274,9 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="文件URL" prop="fileUrl" width="100px">
+          <el-table-column label="文件URL" prop="fileUrl" width="120px">
             <template #default="scope">
-              <el-link v-if="scope.row.fileUrl" :href="scope.row.fileUrl" target="_blank">查看附件</el-link>
+              <el-link v-if="scope.row.fileUrl" @click="openImageDialog(scope.row.fileUrl)">点击查看作业</el-link>
               <span v-else>无</span>
             </template>
           </el-table-column>
@@ -303,6 +308,7 @@
       </div>
     </div>
 
+    <!--评价作业对话框-->
     <el-dialog
         title="评价作业"
         v-model="dialogVisible"
@@ -318,6 +324,17 @@
         </el-form-item>
         <el-form-item label="截止时间">
           <el-input v-model="form.deadline" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="作业详情">
+          <div v-if="form.fileUrl">
+            <img
+                :src="form.fileUrl"
+                alt="作业文件"
+                style="width: 100px; height: auto; cursor: pointer;"
+                @click="openImageDialog(form.fileUrl)"
+            />
+          </div>
+          <span v-else>无作业文件</span>
         </el-form-item>
         <el-form-item label="评论">
           <el-input
@@ -335,6 +352,7 @@
       </div>
     </el-dialog>
 
+    <!--修改作业对话框-->
     <el-dialog
         title="修改作业"
         v-model="dialogVisible2"
@@ -416,6 +434,16 @@
       </div>
     </el-dialog>
 
+    <el-dialog
+        v-model="imageDialogVisible"
+        width="40%"
+        @close="imageDialogVisible = false"
+        title="查看作业完成情况"
+        :top="'30px'"
+    >
+      <img :src="selectedImage" style="width: 100%; max-height: 80vh; object-fit: contain;" />
+    </el-dialog>
+
   </div>
 </template>
 
@@ -440,6 +468,8 @@ export default {
       deleteDialogVisible: false, // 控制删除确认对话框的显示
       deleteHomeworkId: null,    // 存储要删除的作业 ID
       reviews: [], // 存储从后端获取的评价数据
+      imageDialogVisible: false, // 控制弹出框显示
+      selectedImage: '', // 存储选中的图片URL
       publishForm: {              // 布置作业表单数据
         orderId: '',
         title: '',
@@ -495,7 +525,10 @@ export default {
       try {
         const response = await axios.get('http://localhost:8889/review/selectMyReviews');
         if (response.data.code === 200) {
-          this.reviews = response.data.data; // 保存评价数据
+          this.reviews = response.data.data.map(review => {
+            review.createdAt = this.formatDate(review.createdAt); // 格式化时间
+            return review;
+          });
         } else {
           this.$message.error(response.data.msg); // 错误提示
         }
@@ -677,6 +710,19 @@ export default {
     resetDeleteDialog() {
       this.deleteHomeworkId = null;
     },
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}年${month}月${day}日 ${hours}:${minutes}`;
+    },
+    openImageDialog(fileUrl) {
+      this.selectedImage = fileUrl; // 设置选中的图片URL
+      this.imageDialogVisible = true; // 显示弹出框
+    },
 
   },
 
@@ -760,29 +806,45 @@ export default {
   max-height: 400px;
 }
 
+.no-reviews,
 .feedback-card {
   border: 1px solid #ccc;
   padding: 10px;
   margin-bottom: 10px;
-  border-radius: 5px;
+  border-radius: 10px; /* 圆角 */
   background-color: #f9f9f9;
 }
 
 .feedback-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* 使家长ID和评分分开 */
+  align-items: center; /* 使评分和家长ID垂直居中对齐 */
   margin-bottom: 10px;
 }
 
 .feedback-header-left {
   display: flex;
-  flex-direction: column;
 }
 
 .rating {
-  margin-top: 5px;
+  margin-left: 10px; /* 评分与家长ID之间的间距 */
   font-size: 14px;
   color: #f39c12;
+}
+
+.star {
+  font-size: 18px;
+  margin-left: 5px;
+}
+
+.star.filled::before {
+  content: '★'; /* 实心星星 */
+  color: #f39c12; /* 黄色 */
+}
+
+.star.empty::before {
+  content: '☆'; /* 空心星星 */
+  color: #ccc; /* 灰色 */
 }
 
 .feedback-content {
@@ -794,5 +856,12 @@ export default {
   margin-top: 10px;
   font-size: 12px;
   color: #999;
+}
+
+.no-reviews {
+  text-align: center;
+  font-size: 16px;
+  color: #999;
+  padding: 20px;
 }
 </style>

@@ -77,7 +77,8 @@ export default {
     },
     handleCommand(command) {
       if (command === 'profile') {
-        alert('个人中心');
+        this.selectedSection = '个人中心';
+        this.$emit('selectSection', '个人中心');
       } else if (command === 'logout') {
         this.dialogVisible = true; // 显示对话框
       }

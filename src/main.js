@@ -18,6 +18,29 @@ app.use(ElementPlus, { locale: zhCn }); // 使用 ElementPlus 和语言包
         }
     });
 });
+
+// 标记页面是否刷新
+window.onbeforeunload = function () {
+    // 页面刷新时，设置标志变量为 true
+    sessionStorage.setItem("isPageRefreshing", "true");
+}
+
+window.onload = function () {
+    // 页面加载时，检查是否为刷新操作
+    const isPageRefreshing = sessionStorage.getItem("isPageRefreshing");
+    if (!isPageRefreshing) {
+        // 如果没有刷新标志，说明是浏览器关闭，删除 localStorage 数据
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userPicture');
+        localStorage.removeItem('role');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        router.push('/login');  // 跳转到登录页
+    } else {
+        // 如果是刷新操作，移除刷新标志
+        sessionStorage.removeItem("isPageRefreshing");
+    }
+}
 // 注册 ElementPlus 图标组件
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component);

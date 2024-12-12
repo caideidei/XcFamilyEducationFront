@@ -9,6 +9,7 @@ import Teacher_StudySquare from './Teacher_StudySquare.vue';
 import Teacher_MyTutoring from './Teacher_MyTutoring.vue';
 import Teacher_SystemAnnouncements from './Teacher_SystemAnnouncements.vue';
 import Teacher_Feedback from './Teacher_Feedback.vue';
+import Teacher_PersonCenter from './Teacher_PersonCenter.vue';
 
 export default {
   props: {
@@ -19,6 +20,7 @@ export default {
     Teacher_MyTutoring,
     Teacher_SystemAnnouncements,
     Teacher_Feedback,
+    Teacher_PersonCenter,
   },
   methods: {
     getComponent(section) {
@@ -31,6 +33,8 @@ export default {
           return 'Teacher_SystemAnnouncements';
         case '留言反馈':
           return 'Teacher_Feedback';
+        case '个人中心':
+          return 'Teacher_PersonCenter';
         default:
           return 'Teacher_HomeSection';
       }
