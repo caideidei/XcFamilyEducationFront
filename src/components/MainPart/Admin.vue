@@ -246,7 +246,6 @@ export default {
         password :''
       };
     },
-
     // 更新管理员信息
     async updateManager() {
       if (this.form.password === '') {
